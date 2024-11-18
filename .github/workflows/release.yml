@@ -103,9 +103,9 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: dist/build-artifact
+          artifacts: dist/spice-exe
           tag: "v${{ env.VERSION }}"
           name: "Release v${{ env.VERSION }}"
           body: |
             This release includes the following build:
-            - Build file: dist/build-artifact
+            - Build file: dist/spice-exe
