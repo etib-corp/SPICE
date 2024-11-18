@@ -1,0 +1,25 @@
+name: Update release
+
+on:
+  push:
+    branches:
+      - releases
+
+jobs:
+  update-release-name:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/github-script@v6
+        env:
+          RELEASE_ID: ${{ github.event.release.id }}
+        with:
+          script: |
+            const { RELEASE_ID } = process.env
+
+            octokit.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: `${RELEASE_ID}`,
+              name: 'Some New Name'
+            })
