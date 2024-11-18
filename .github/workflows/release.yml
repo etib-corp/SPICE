@@ -1,25 +1,29 @@
-name: Update release
+name: Create Release
 
 on:
   push:
-    branches:
-      - releases
+    branches: [ "main" ]
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  update-release-name:
+  build:
+    name: Create Release
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/github-script@v6
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
-          RELEASE_ID: ${{ github.event.release.id }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          script: |
-            const { RELEASE_ID } = process.env
-
-            octokit.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: `${RELEASE_ID}`,
-              name: 'Some New Name'
-            })
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Changes in this Release
+            - First Change
+            - Second Change
+          draft: false
+          prerelease: false
