@@ -64,6 +64,15 @@ jobs:
       id: extract_ref
       run: echo "ref_name=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
+    - name: Check prerelease
+      id: check_version
+      run: |
+        if [[ "${{ github.ref }}" =~ ^refs/tags/[0-9.]+$ ]]; then
+          echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+        else
+          echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+        fi
+
     - name: Upload Release Asset
       uses: actions/upload-artifact@v3
       with:
