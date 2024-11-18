@@ -96,7 +96,6 @@ jobs:
           git push origin "v${{ env.NEW_VERSION }}"
 
       - name: Read version
-        id: version
         run: |
           VERSION=$(cat VERSION)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
