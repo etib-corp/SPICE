@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*' # Triggers only on version tags like v1.0.0
+    branches:
+      - main # Adjust to the branch you want to trigger on
 
 jobs:
   build:
@@ -14,9 +14,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+        # Read version from the VERSION file
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       # Save the build artifact
       - name: Save build artifact
-        run: make && mkdir -p dist && mv .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe dist/
+        run: make && ls -R && mkdir -p dist && mv .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe dist/
         # Replace <your_build_output_file> with the actual file name from your Makefile
 
       # Upload the artifact for the release
@@ -34,14 +41,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Create a GitHub release and attach artifacts
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+ # Create a GitHub release and attach artifacts
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           artifacts: dist/<your_build_output_file>
-          tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag: "v${{ env.VERSION }}"
+          name: "Release v${{ env.VERSION }}"
           body: |
             This release includes the following build:
-            - Build file: .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe
+            - Build file: <your_build_output_file>
         # Replace <your_build_output_file> with your actual file name
