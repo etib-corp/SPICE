@@ -32,7 +32,7 @@ jobs:
 
       # Save the build artifact
       - name: Save build artifact
-        run: make && ls -Ra && mkdir -p dist && mv ./.stack-work/dist/x86_64-linux-tinfo6/ghc-9.6.6/build/spice-exe  dist/
+        run: make && ls -Ra && mkdir -p dist && mv ./.stack-work/dist/x86_64-linux-tinfo6/ghc-9.6.6/build/spice-exe/spice-exe  dist/
         # Replace <your_build_output_file> with the actual file name from your Makefile
 
       # Upload the artifact for the release
@@ -103,9 +103,9 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: dist/build-artifact
+          artifacts: dist/spice-exe
           tag: "v${{ env.VERSION }}"
           name: "Release v${{ env.VERSION }}"
           body: |
             This release includes the following build:
-            - Build file: dist/build-artifact
+            - Build file: dist/spice-exe
