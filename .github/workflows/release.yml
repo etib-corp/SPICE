@@ -12,8 +12,18 @@ on:
       - closed # Trigger when PR is merged
 
 jobs:
-
   build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Build the whole project
+      - name: Build
+        run: make
+
+  release:
     runs-on: ubuntu-latest
     steps:
       # Checkout the repository
@@ -29,16 +39,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifact
+          name: spice-exe
           path: dist/
-
-  update-version:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      # Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v3
 
       # Read the current version
       - name: Read current version
@@ -93,21 +95,12 @@ jobs:
           git tag "v${{ env.NEW_VERSION }}"
           git push origin "v${{ env.NEW_VERSION }}"
 
-  release:
-    runs-on: ubuntu-latest
-    needs: [build, update-version]
-    steps:
-      # Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Read version
         id: version
         run: |
           VERSION=$(cat VERSION)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
- # Create a GitHub release and attach artifacts
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
@@ -116,5 +109,4 @@ jobs:
           name: "Release v${{ env.VERSION }}"
           body: |
             This release includes the following build:
-            - Build file: <your_build_output_file>
-        # Replace <your_build_output_file> with your actual file name
+            - Build file: dist/build-artifact
