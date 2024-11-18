@@ -25,47 +25,5 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-        # Read version from the VERSION file
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      # Save the build artifact
-      - name: Save build artifact
-        run: make && ls -Ra && mkdir -p dist && mv ./.stack-work/dist/x86_64-linux-tinfo6/ghc-9.6.6/build/spice-exe  dist/
-        # Replace <your_build_output_file> with the actual file name from your Makefile
-
-      # Upload the artifact for the release
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-artifact
-          path: dist/
-
-  release:
-    runs-on: ubuntu-latest
-    needs: ["build", "tests"]
-    steps:
-      # Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Read version
-        id: version
-        run: |
-          VERSION=$(cat VERSION)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
- # Create a GitHub release and attach artifacts
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: dist/spice-exe
-          tag: "v${{ env.VERSION }}"
-          name: "Release v${{ env.VERSION }}"
-          body: |
-            This release includes the following build:
-            - Build file: <your_build_output_file>
-        # Replace <your_build_output_file> with your actual file name
+      - name: Build
+        run: make
