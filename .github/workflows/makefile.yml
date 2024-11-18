@@ -24,9 +24,41 @@ jobs:
     - name: Test
       run: make tests_run
 
-  release:
+  versioning:
     runs-on: ubuntu-latest
     needs: ["build", "test"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get Current Version
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION) # Assuming you have a VERSION file
+          echo "current_version=$VERSION" >> $GITHUB_ENV
+
+      - name: Increment Version
+        id: increment_version
+        run: |
+          VERSION=${{ env.current_version }}
+          IFS='.' read -r -a parts <<< "$VERSION"
+          ((parts[2]++)) # Increment patch version (X.Y.Z -> X.Y.Z+1)
+          NEW_VERSION="${parts[0]}.${parts[1]}.${parts[2]}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Create and Push Tag
+        run: |
+          git tag -a v${{ env.new_version }} -m "Release v${{ env.new_version }}"
+          git push origin v${{ env.new_version }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: ["build", "test", "versioning"]
     steps:
     - name: Extract Tag or Branch Name
       id: extract_ref
@@ -43,8 +75,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.event.head_commit.message }}
-        release_name: Release ${{ github.event.head_commit.message }}
+        tag_name: ${{ env.ref_name }}2
+        release_name: Release ${{ env.ref_name }}
         body: |
           ${{ github.event.head_commit.message }}
         draft: false
