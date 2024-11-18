@@ -11,14 +11,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Extract Tag or Branch Name
+        id: extract_ref
+        run: echo "ref_name=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Create Release
-        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ env.ref_name }}
+          release_name: Release ${{ env.ref_name }}
           body: |
             Changes in this Release
             - First Change
