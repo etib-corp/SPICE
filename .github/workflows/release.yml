@@ -16,6 +16,15 @@ jobs:
         id: extract_ref
         run: echo "ref_name=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
+      - name: Build Project
+        run: make
+
+      - name: Upload Release Asset
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-artifact
+          path: .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe
+
       - name: Create Release
         uses: actions/create-release@v1
         env:
@@ -29,3 +38,13 @@ jobs:
             - Second Change
           draft: false
           prerelease: false
+
+      - name: Upload Release Asset to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe
+          asset_name: artifact-name
+          asset_content_type: application/octet-stream
