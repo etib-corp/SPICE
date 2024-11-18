@@ -6,9 +6,17 @@ on:
       - main # Adjust to the branch you want to trigger on
 
 jobs:
-  build:
+
+  tests:
     runs-on: ubuntu-latest
 
+    steps:
+      - name: Run tests
+        run: make tests_run
+
+  build:
+    runs-on: ubuntu-latest
+    needs: ["tests"]
     steps:
       # Checkout the repository
       - name: Checkout code
@@ -35,7 +43,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: ["build"]
+    needs: ["build", "tests"]
     steps:
       # Checkout the repository
       - name: Checkout code
@@ -51,7 +59,7 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: dist/<your_build_output_file>
+          artifacts: dist/spice-exe
           tag: "v${{ env.VERSION }}"
           name: "Release v${{ env.VERSION }}"
           body: |
