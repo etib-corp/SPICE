@@ -23,7 +23,7 @@ jobs:
 
       # Save the build artifact
       - name: Save build artifact
-        run: make && ls -R && mkdir -p dist && mv .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe dist/
+        run: make && ls -Ra && mkdir -p dist && mv .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe dist/
         # Replace <your_build_output_file> with the actual file name from your Makefile
 
       # Upload the artifact for the release
