@@ -1,0 +1,120 @@
+name: Automated Versioning
+
+on:
+  push:
+    paths:
+      - '**/*' # Trigger on any changes
+  create:
+    branches:
+      - '**' # Trigger when any branch is created
+  pull_request:
+    types:
+      - closed # Trigger when PR is merged
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Save the build artifact
+      - name: Save build artifact
+        run: make && ls -Ra && mkdir -p dist && mv ./.stack-work/install/x86_64-linux-tinfo6/136c492586edfebd2a2edd8aebe7b2186db669ec95312ed7e63f581ec9b1601e/9.6.6/bin/spice-exe  dist/
+        # Replace <your_build_output_file> with the actual file name from your Makefile
+
+      # Upload the artifact for the release
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifact
+          path: dist/
+
+  update-version:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Read the current version
+      - name: Read current version
+        id: version
+        run: |
+          if [ -f VERSION ]; then
+            VERSION=$(cat VERSION)
+          else
+            VERSION="0.0.0"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Current version: $VERSION"
+
+      # Determine the new version
+      - name: Determine new version
+        id: new_version
+        run: |
+          CURRENT_VERSION=${{ env.VERSION }}
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+
+          if [ "${{ github.event_name }}" == "push" ]; then
+            PATCH=$((PATCH + 1))
+          elif [ "${{ github.event_name }}" == "create" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          elif [ "${{ github.event.pull_request.merged }}" == "true" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          fi
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "New version: $NEW_VERSION"
+
+      # Update the VERSION file
+      - name: Update VERSION file
+        run: |
+          echo "${{ env.NEW_VERSION }}" > VERSION
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
+          git push
+
+      # Tag the new version
+      - name: Create a new tag
+        run: |
+          git tag "v${{ env.NEW_VERSION }}"
+          git push origin "v${{ env.NEW_VERSION }}"
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build, update-version]
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+ # Create a GitHub release and attach artifacts
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: dist/spice-exe
+          tag: "v${{ env.VERSION }}"
+          name: "Release v${{ env.VERSION }}"
+          body: |
+            This release includes the following build:
+            - Build file: <your_build_output_file>
+        # Replace <your_build_output_file> with your actual file name
