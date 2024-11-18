@@ -20,7 +20,7 @@ jobs:
         run: make
 
       - name: Upload Release Asset
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: release-artifact
           path: .stack-work/dist/x86_64-linux-tinfo6/Cabal-3.10.3.0/build/spice-exe/spice-exe
