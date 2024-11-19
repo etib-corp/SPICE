@@ -27,5 +27,8 @@ parseInteger = fmap Integer parseInt
 -- parseFloat :: Parser Expr
 -- parseFloat = fmap Float parseDouble
 
+parseVar :: Parser Expr
+parseVar = parseGivenString "define" *> parseWhiteSpaces *> fmap Var parseString
+
 parseExpression :: Parser Expr
-parseExpression = parseInteger <|> fail "Failed to parse Lisp expression"
+parseExpression = parseVar <|> parseInteger

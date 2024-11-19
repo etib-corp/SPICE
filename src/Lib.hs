@@ -1,5 +1,5 @@
 module Lib
-    ( getInt, getDouble
+    ( getInt, getDouble, isWhiteSpace
     ) where
 
 import Data.Text (pack)
@@ -17,3 +17,9 @@ getDouble :: String -> Maybe Double
 getDouble s = case double $ pack s of
    Right (d, _) -> Just d
    Left _ -> Nothing
+
+isWhiteSpace :: Char -> Bool
+isWhiteSpace ' ' = True
+isWhiteSpace '\n' = True
+isWhiteSpace '\t' = True
+isWhiteSpace _ = False

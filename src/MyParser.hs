@@ -9,6 +9,7 @@ import Control.Monad
 import Data.Functor.Identity
 import Data.List
 import Data.Char
+import Debug.Trace
 
 data Error = Error { msg :: String, pos :: Int } deriving (Show)
 data State = State { str :: String, position :: Int} deriving (Show)
@@ -73,9 +74,8 @@ parseOneOf s = satisfy (\ c -> elem c s)
 parseNoneOf :: String -> Parser Char
 parseNoneOf s = satisfy (\ c -> not $ elem c s)
 
-parseString :: String -> Parser String
-parseString "" = pure ""
-parseString s = fmap (:) (parseChar (head s)) <*> parseString (tail s)
+parseString :: Parser String
+parseString = parseManyUntil parseAnyChar (satisfy isWhiteSpace)
 
 parseManyUntil :: Parser a -> Parser b -> Parser [a]
 parseManyUntil pa pb = (pb *> pure []) <|> fmap (:) pa <*> parseManyUntil pa pb
@@ -99,3 +99,7 @@ parseUInt = some (satisfy isDigit) >>= \ s ->
     case getInt s of
         Nothing -> fail "Invalid unsigned number"
         Just x -> pure x
+
+parseGivenString :: String -> Parser String
+parseGivenString "" = pure ""
+parseGivenString s = fmap (:) (parseChar (head s)) <*> parseGivenString (tail s)
