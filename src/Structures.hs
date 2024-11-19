@@ -1,14 +1,23 @@
 module Structures where
 
-data Atom = Integer Int | Str String | Operator String | Name String deriving (Show, Eq)
-data Expression = Atom Atom | List [Expression] deriving (Show, Eq)
+type Name = String
 
-data AST = Empty | Node (AST) Expression (AST) deriving(Show, Eq)
+data Expr
+  = Int Integer
+  | Float Double
+  | Var Name
+  | Operator Name
+  | Callable Name
+  | Function Name [Name] Expr
+  | ArithmeticOp Name Expr Expr
+  | List [Expr]
+--   | Call Name [Expr]
+--   | Function Name [Name] Expr
+--   | Extern Name [Name]
+--   | ArithmeticOp Name Expr Expr
+--   | UnaryOp Name Expr
+  deriving (Eq, Ord, Show)
 
--- constructAST :: AST -> Expression -> AST
--- constructAST tree (Atom a) = Node Empty (Atom a) Empty
--- constructAST tree (List lst) = 
+data AST a = Node (AST a) a (AST a) | Empty deriving (Show, Eq)
 
-createAST :: Expression -> AST
-createAST (Atom val) = Node Empty (Atom val) Empty
 
