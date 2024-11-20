@@ -1,6 +1,7 @@
 module LispParser where
 
 import MyParser
+import Lib
 
 import Control.Applicative
 import Data.Functor
@@ -28,7 +29,7 @@ parseInteger = fmap Integer parseInt
 -- parseFloat = fmap Float parseDouble
 
 parseVar :: Parser Expr
-parseVar = parseGivenString "define" *> parseWhiteSpaces *> fmap Var parseString
+parseVar = fmap Var (parseGivenString "define" *> parseWhiteSpaces *> parseString)
 
 parseExpression :: Parser Expr
 parseExpression = parseVar <|> parseInteger
