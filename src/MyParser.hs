@@ -77,6 +77,9 @@ parseNoneOf s = satisfy (\ c -> not $ elem c s)
 parseString :: Parser String
 parseString = parseSomeUntil parseAnyChar (satisfy isWhiteSpace)
 
+parseSepBy :: Parser a -> Parser b -> Parser [a]
+parseSepBy p1 p2 = (:) <$> p1 <*> (many (p2 *> p1))
+
 parseManyUntil :: Parser a -> Parser b -> Parser [a]
 parseManyUntil pa pb = (pb *> pure []) <|> fmap (:) pa <*> parseManyUntil pa pb
 
