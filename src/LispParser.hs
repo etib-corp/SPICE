@@ -3,31 +3,25 @@ where
 
 import MyParser
 import Lib
+import Structures
 
 import Control.Applicative
 import Data.Functor
 
 type Name = String
 
-data Expr
-  = Integer Int
-  | Float Double
-  | Var String
-  | Call Name [Expr]
-  | Function Name [Name] Expr
-  | Extern Name [Name]
-  | BinaryOp Name Expr Expr
-  | UnaryOp Name Expr
-  | List [Expr]
-  deriving (Eq, Ord, Show)
-
-data AST a = Node (AST a) a (AST a) | Empty deriving (Show, Eq)
+parseOperator :: Parser Expr
+parseOperator = fmap Operator (parseGivenString "+" <|>
+                               parseGivenString "-" <|>
+                               parseGivenString "=" <|>
+                               parseGivenString "/" <|>
+                               parseGivenString "*" <|> fail "Failed to parse operator")
 
 parseInteger :: Parser Expr
-parseInteger = fmap Integer parseInt
+parseInteger = fmap Integer (parseInt <|> fail "Failed to parse Integer")
 
 parseFloat :: Parser Expr
-parseFloat = fmap Float parseDouble
+parseFloat = fmap Float (parseDouble <|> fail "Failed to parse Float")
 
 -- parseCall :: Parser Expr
 
@@ -35,13 +29,16 @@ parseFloat = fmap Float parseDouble
 -- parseFunction = fmap Function parseString ((fmap (:) parseString) parseExpression)
 
 parseVar :: Parser Expr
-parseVar = fmap Var (parseGivenString "define" *> parseWhiteSpaces *> parseString)
+parseVar = fmap Var ((parseGivenString "define" *> parseWhiteSpaces *> parseString) <|>
+                      fail "Failed to parse Variable")
 
 parseList :: Parser Expr
-parseList = fmap List (parseGivenString "list" *> parseWhiteSpaces *> parseSepBy parseExpression parseWhiteSpaces)
-
-parseExpression :: Parser Expr
-parseExpression = parseVar <|> parseInteger <|> parseList
+parseList = fmap List ((parseGivenString "list" *> parseWhiteSpaces *>
+                       parseSepBy parseExpression parseWhiteSpaces) <|>
+                       fail "Failed to parse List")
 
 parseLispExpressionTest :: Parser Expr
 parseLispExpressionTest = parseGivenString "(" *> parseExpression <* parseGivenString ")"
+
+parseExpression :: Parser Expr
+parseExpression = parseVar <|> parseInteger <|> parseList

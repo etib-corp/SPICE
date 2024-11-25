@@ -3,19 +3,19 @@ module Structures where
 type Name = String
 
 data Expr
-  = Int Integer
-  | Declarator Name
-  | Float Double
-  | Var Name
-  | Operator Name
-  | Call Name
-  | Condition Name
-  | Callable Name [Expr]
-  | Statement Name
-  | Function Name [Name] Expr
-  | ArithmeticOp Name Expr Expr
-  | List [Expr]
-  | If Expr Name Expr Expr
+  = Integer Int                 -- Parsed
+  | Declarator Name             -- DONT
+  | Float Double                -- Parsed
+  | Var Name                    -- Parsed
+  | Operator Name               -- To parse
+  | Call Name                   -- DONT
+  | Condition Name              -- DONT
+  | Callable Name [Expr]        -- To parse
+  | Statement Name              -- DONT
+  | Function Name [Name] Expr   -- To parse
+  | ArithmeticOp Name Expr Expr -- To parse
+  | List [Expr]                 -- Parsed
+  | If Expr Name Expr Expr      -- To parse
 --   | Call Name [Expr]
 --   | Function Name [Name] Expr
 --   | Extern Name [Name]
