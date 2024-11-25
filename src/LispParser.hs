@@ -1,4 +1,5 @@
-module LispParser where
+module LispParser
+where
 
 import MyParser
 import Lib
@@ -31,5 +32,11 @@ parseInteger = fmap Integer parseInt
 parseVar :: Parser Expr
 parseVar = fmap Var (parseGivenString "define" *> parseWhiteSpaces *> parseString)
 
+parseList :: Parser Expr
+parseList = fmap List (parseGivenString "list" *> parseWhiteSpaces *> parseSepBy parseExpression parseWhiteSpaces)
+
 parseExpression :: Parser Expr
-parseExpression = parseVar <|> parseInteger
+parseExpression = parseVar <|> parseInteger <|> parseList
+
+parseLispExpressionTest :: Parser Expr
+parseLispExpressionTest = parseGivenString "(" *> parseExpression <* parseGivenString ")"
