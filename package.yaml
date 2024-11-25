@@ -21,6 +21,8 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- text
+
 
 ghc-options:
 - -Wall
@@ -37,6 +39,7 @@ library:
   source-dirs: src
   dependencies:
   - parsec
+  - text
 
 executables:
   spice-exe:
@@ -49,6 +52,7 @@ executables:
     dependencies:
     - spice
     - parsec
+    - text
 
 tests:
   spice-test:
@@ -61,3 +65,4 @@ tests:
     dependencies:
     - spice
     - parsec
+    - text
