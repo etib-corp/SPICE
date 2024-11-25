@@ -53,7 +53,6 @@ executables:
     - parsec
     - text
 
-
 tests:
   spice-test:
     main:                Spec.hs
@@ -66,4 +65,3 @@ tests:
     - spice
     - parsec
     - text
-
