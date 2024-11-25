@@ -103,3 +103,11 @@ parseUInt = some (satisfy isDigit) >>= \ s ->
 parseGivenString :: String -> Parser String
 parseGivenString "" = pure ""
 parseGivenString s = fmap (:) (parseChar (head s)) <*> parseGivenString (tail s)
+
+parseDouble :: Parser Double
+parseDouble = check >>= \ s ->
+    case getDouble s of
+        Nothing -> fail "Invalid float"
+        Just x -> pure x
+    where
+        check = fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)

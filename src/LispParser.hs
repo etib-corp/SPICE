@@ -25,8 +25,13 @@ data AST a = Node (AST a) a (AST a) | Empty deriving (Show, Eq)
 parseInteger :: Parser Expr
 parseInteger = fmap Integer parseInt
 
--- parseFloat :: Parser Expr
--- parseFloat = fmap Float parseDouble
+parseFloat :: Parser Expr
+parseFloat = fmap Float parseDouble
+
+-- parseCall :: Parser Expr
+
+-- parseFunction :: Parser Expr
+-- parseFunction = fmap Function parseString ((fmap (:) parseString) parseExpression)
 
 parseVar :: Parser Expr
 parseVar = fmap Var (parseGivenString "define" *> parseWhiteSpaces *> parseString)
