@@ -30,3 +30,6 @@ instance (Show a) => Show (AST a) where
   show (Node a []) = show a
   show (Node a xs) = show a ++ " -> \n" ++ show xs
 
+instance Functor AST where
+  fmap f Empty = Empty
+  fmap f (Node a xs) = Node (f a) (map (fmap f) xs)
