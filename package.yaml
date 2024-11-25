@@ -35,6 +35,8 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+  - parsec
 
 executables:
   spice-exe:
@@ -46,6 +48,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - spice
+    - parsec
 
 tests:
   spice-test:
@@ -57,3 +60,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - spice
+    - parsec
