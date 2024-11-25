@@ -7,13 +7,13 @@ data Expr
   | Declarator Name             -- DONT
   | Float Double                -- Parsed
   | Var Name                    -- Parsed
-  | Operator Name               -- To parse
+  | Operator Name               -- Parsed
   | Call Name                   -- DONT
   | Condition Name              -- DONT
-  | Callable Name [Expr]        -- To parse
+  | Callable Name [Expr]        -- Parsed, need to be improved
   | Statement Name              -- DONT
-  | Function Name [Name] Expr   -- To parse
-  | ArithmeticOp Name Expr Expr -- To parse
+  | Function Name [Name] Expr   -- Parsed
+  | ArithmeticOp Name Expr Expr -- Parsed
   | List [Expr]                 -- Parsed
   | If Expr Name Expr Expr      -- To parse
 --   | Call Name [Expr]

@@ -56,6 +56,12 @@ parseT s pt = runParser pt s ok ko
 parse :: String -> Parser a -> Either Error a
 parse s pa = runIdentity $ parseT (State s 0) pa
 
+parseName :: Parser String
+parseName = do
+    c <- parseOneOf "abcdefghijklmnopqrstuvwxyz"
+    cs <- many $ parseOneOf "abcdefghijklmnopqrstuvwxyz0123456789"
+    pure (c:cs)
+
 parseAnyChar :: Parser Char
 parseAnyChar = ParsecT $ \ s ok ko -> case uncons $ str s of
     Nothing -> ko (Error "End Of File" (position s)) s

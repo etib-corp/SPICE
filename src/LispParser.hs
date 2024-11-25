@@ -9,14 +9,18 @@ import Control.Applicative
 import Data.Functor
 import Structures
 
-type Name = String
-
 parseOperator :: Parser Expr
 parseOperator = fmap Operator (parseGivenString "+" <|>
                                parseGivenString "-" <|>
                                parseGivenString "=" <|>
                                parseGivenString "/" <|>
                                parseGivenString "*" <|> fail "Failed to parse operator")
+
+parseParenOp :: Parser ()
+parseParenOp = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+
+parseParenCl :: Parser ()
+parseParenCl = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
 
 parseInteger :: Parser Expr
 parseInteger = fmap Integer (parseInt <|> fail "Failed to parse Integer")
@@ -25,25 +29,39 @@ parseFloat :: Parser Expr
 parseFloat = fmap Float (parseDouble <|> fail "Failed to parse Float")
 
 parseArithmeticOp :: Parser Expr
-parseArithmeticOp = ArithmeticOp
-    <$> ((parseGivenString "+") <|> (parseGivenString "-") <|> (parseGivenString "*") <|> (parseGivenString "/"))
+parseArithmeticOp = parseParenOp *> parseArithmeticExpr <* parseParenCl
+
+parseArithmeticExpr :: Parser Expr
+parseArithmeticExpr = ArithmeticOp
+    <$> (parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*" <|> parseGivenString "/")
     <*> (parseWhiteSpaces *> parseExpression)
     <*> (parseWhiteSpaces *> parseExpression)
 
--- parseFunction :: Parser Expr
--- parseFunction = fmap Function parseString ((fmap (:) parseString) parseExpression)
+parseFunction :: Parser Expr
+parseFunction = Function
+    <$> (parseGivenString "define" *> parseParenOp *> parseName <* parseWhiteSpaces)
+    <*> (parseWhiteSpaces *> parseSepBy parseName parseWhiteSpaces <* parseWhiteSpaces <* parseParenCl)
+    <*> (parseWhiteSpaces *> parseExpression)
+
+parseCallable :: Parser Expr
+parseCallable = Callable
+    <$> parseString
+    <*> (parseWhiteSpaces *> parseManyUntil parseExpression parseWhiteSpaces)
 
 parseVar :: Parser Expr
 parseVar = fmap Var ((parseGivenString "define" *> parseWhiteSpaces *> parseString) <|>
                       fail "Failed to parse Variable")
 
 parseList :: Parser Expr
-parseList = fmap List ((parseGivenString "list" *> parseWhiteSpaces *>
+parseList = parseParenOp *> parseListExpr <* parseParenCl
+
+parseListExpr :: Parser Expr
+parseListExpr = fmap List ((parseGivenString "list" *> parseWhiteSpaces *>
                        parseSepBy parseExpression parseWhiteSpaces) <|>
                        fail "Failed to parse List")
 
 parseLispExpressionTest :: Parser Expr
-parseLispExpressionTest = parseGivenString "(" *> parseExpression <* parseGivenString ")"
+parseLispExpressionTest = parseParenOp *> parseExpression <* parseParenCl
 
 parseExpression :: Parser Expr
-parseExpression = parseVar <|> parseInteger <|> parseList
+parseExpression = parseArithmeticOp <|> parseVar <|> parseInteger <|> parseList <|> parseFloat <|> parseOperator <|> parseFunction <|> parseCallable
