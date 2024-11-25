@@ -3,7 +3,7 @@ module Structures where
 type Name = String
 
 data Expr
-  = Int Integer
+  = Integer Int
   | Declarator Name
   | Float Double
   | Var Name
