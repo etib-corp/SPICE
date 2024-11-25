@@ -7,6 +7,7 @@ import Structures
 
 import Control.Applicative
 import Data.Functor
+import Structures
 
 type Name = String
 
@@ -23,7 +24,11 @@ parseInteger = fmap Integer (parseInt <|> fail "Failed to parse Integer")
 parseFloat :: Parser Expr
 parseFloat = fmap Float (parseDouble <|> fail "Failed to parse Float")
 
--- parseCall :: Parser Expr
+parseArithmeticOp :: Parser Expr
+parseArithmeticOp = ArithmeticOp
+    <$> ((parseGivenString "+") <|> (parseGivenString "-") <|> (parseGivenString "*") <|> (parseGivenString "/"))
+    <*> (parseWhiteSpaces *> parseExpression)
+    <*> (parseWhiteSpaces *> parseExpression)
 
 -- parseFunction :: Parser Expr
 -- parseFunction = fmap Function parseString ((fmap (:) parseString) parseExpression)
