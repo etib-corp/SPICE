@@ -48,4 +48,3 @@ getOptions = execParserPure customPrefs opts <$> getArgs >>= handleParseResultCu
       <> progDesc "Process some integers"
       <> header "optparse-app - an example of an options parser" )
     customPrefs = prefs $ showHelpOnError
-

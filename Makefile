@@ -4,7 +4,7 @@ build:
 	stack build
 
 tests_run:
-	stack test
+	stack test --coverage
 
 clean:
 	stack clean

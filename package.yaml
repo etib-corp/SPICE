@@ -60,3 +60,4 @@ tests:
     dependencies:
     - spice
     - optparse-applicative
+    - HUnit
