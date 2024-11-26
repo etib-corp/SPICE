@@ -58,8 +58,8 @@ parse s pa = runIdentity $ parseT (State s 0) pa
 
 parseName :: Parser String
 parseName = do
-    c <- parseOneOf "abcdefghijklmnopqrstuvwxyz"
-    cs <- many $ parseOneOf "abcdefghijklmnopqrstuvwxyz0123456789"
+    c <- parseOneOf "abcdefghijklmnopqrstuvwxyzQWERTYUIOPASDFGHJKLZXCVBNM"
+    cs <- many $ parseOneOf "abcdefghijklmnopqrstuvwxyz0123456789QWERTYUIOPASDFGHJKLZXCVBNM"
     pure (c:cs)
 
 parseAnyChar :: Parser Char
