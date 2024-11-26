@@ -33,3 +33,9 @@ instance (Show a) => Show (AST a) where
 instance Functor AST where
   fmap f Empty = Empty
   fmap f (Node a xs) = Node (f a) (map (fmap f) xs)
+
+data Env = Env { variables :: [(Expr, Expr)] } deriving (Show)
+
+instance Semigroup Env where
+  Env xs <> Env ys = Env $ xs ++ ys
+
