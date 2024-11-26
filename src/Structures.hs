@@ -6,7 +6,7 @@ data Expr
   = Integer Int                 -- Parsed
   | Declarator Name             -- DONT
   | Float Double                -- Parsed
-  | Var Name                    -- Parsed
+  | Var Name                    -- Parsed, need to be improved
   | Operator Name               -- Parsed
   | Call Name                   -- DONT
   | Condition Name              -- DONT
@@ -15,7 +15,7 @@ data Expr
   | Function Name [Name] Expr   -- Parsed
   | ArithmeticOp Name Expr Expr -- Parsed
   | List [Expr]                 -- Parsed
-  | If Expr Name Expr Expr      -- To parse
+  | If Expr Name Expr Expr      -- Parsed
 --   | Call Name [Expr]
 --   | Function Name [Name] Expr
 --   | Extern Name [Name]

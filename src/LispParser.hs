@@ -68,5 +68,13 @@ parseListExpr = fmap List ((parseGivenString "list" *> parseWhiteSpaces *>
 parseLispExpressionTest :: Parser Expr
 parseLispExpressionTest = parseParenOp *> parseExpression <* parseParenCl
 
+parseIf :: Parser Expr
+parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseString) <*> parseExpr <*> parseExpr
+    where
+        parseStart = (parseGivenString "if" *> parseWhiteSpaces *> parseExpression)
+        parseExpr = (parseWhiteSpaces *> parseExpression)
+
 parseExpression :: Parser Expr
-parseExpression = parseArithmeticOp <|> parseVar <|> parseInteger <|> parseList <|> parseFloat <|> parseOperator <|> parseFunction <|> parseCallable
+parseExpression = parseArithmeticOp <|> parseVar <|> parseInteger <|>
+                  parseList <|> parseFloat <|> parseOperator <|>
+                  parseFunction <|> parseCallable <|> parseIf
