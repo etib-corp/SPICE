@@ -36,15 +36,14 @@ handleParseResultCustom :: ParserResult Options -> IO Options
 handleParseResultCustom result = case result of
   Success opts -> pure opts
   Failure failure ->
-    let (msg, _) = renderFailure failure "optparse-app"
-    in putStrLn msg >> putStrLn "Custom error: Parsing failed! Returning default options." >> exitWith (ExitFailure 84)
-  CompletionInvoked _ -> exitSuccess
+    let (msg, exitcode) = renderFailure failure "optparse-app"
+    in putStrLn msg >> case exitcode of
+      ExitSuccess -> exitSuccess
+      ExitFailure n -> exitWith (ExitFailure n)
 
 getOptions :: IO Options
 getOptions = execParserPure customPrefs opts <$> getArgs >>= handleParseResultCustom
   where
     opts = info (options <**> helper)
-      ( fullDesc
-      <> progDesc "Process some integers"
-      <> header "optparse-app - an example of an options parser" )
+      ( fullDesc )
     customPrefs = prefs $ showHelpOnError

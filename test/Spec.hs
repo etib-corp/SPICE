@@ -45,7 +45,29 @@ testOptionsParsing = TestList
         _ -> assertFailure "Parsing succeeded when it should have failed"
   ]
 
+testShowOptions :: Test
+testShowOptions = TestList
+  [ TestCase $ do
+      let opts = Options { optVerbose = True, optInput = "input.txt", optOutput = "output.txt" }
+          expected = "Options {optVerbose = True, optInput = \"input.txt\", optOutput = \"output.txt\"}"
+      assertEqual "Show instance should match expected" expected (show opts)
+  , TestCase $ do
+      let opts = Options { optVerbose = False, optInput = "input.txt", optOutput = "output.txt" }
+          expected = "Options {optVerbose = False, optInput = \"input.txt\", optOutput = \"output.txt\"}"
+      assertEqual "Show instance should match expected" expected (show opts)
+  ]
+
+testHelpOutput :: Test
+testHelpOutput = TestList
+  [ TestCase $ do
+      let args = ["--help"]
+          result = execParserPure defaultPrefs (info (options <**> helper) fullDesc) args
+      case result of
+        Success _ -> assertFailure "Parsing succeeded when it should have failed"
+        _ -> return () -- Expected failure
+  ]
+
 main :: IO ()
 main = do
-  _ <- runTestTT testOptionsParsing
+  _ <- runTestTT $ TestList [testOptionsParsing, testShowOptions, testHelpOutput]
   return ()
