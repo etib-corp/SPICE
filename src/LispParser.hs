@@ -40,13 +40,18 @@ parseArithmeticExpr = ArithmeticOp
 parseFunction :: Parser Expr
 parseFunction = Function
     <$> (parseGivenString "define" *> parseParenOp *> parseName <* parseWhiteSpaces)
-    <*> (parseWhiteSpaces *> parseSepBy parseName parseWhiteSpaces <* parseWhiteSpaces <* parseParenCl)
+    <*> (parseWhiteSpaces *> (parseSepBy parseName parseWhiteSpaces <|> pure []) <* parseWhiteSpaces <* parseParenCl)
     <*> (parseWhiteSpaces *> parseExpression)
 
 parseCallable :: Parser Expr
-parseCallable = Callable
-    <$> parseString
-    <*> (parseWhiteSpaces *> parseManyUntil parseExpression parseWhiteSpaces)
+parseCallable = parseParenOp *> parseCallableExpr <* parseParenCl
+
+parseCallableExpr :: Parser Expr
+parseCallableExpr = Callable
+    <$> parseName
+    <*> (parseWhiteSpaces
+        *> (parseSepBy parseExpression parseWhiteSpaces <|> pure [])
+        <* parseWhiteSpaces)
 
 parseVar :: Parser Expr
 parseVar = fmap Var ((parseGivenString "define" *> parseWhiteSpaces *> parseString) <|>
