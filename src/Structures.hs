@@ -4,6 +4,8 @@ import Control.Monad
 import Control.Applicative
 import Control.Monad
 import Data.List (nubBy)
+import Data.Fixed (mod')
+
 
 type Name = String
 
@@ -68,9 +70,9 @@ instance Integral Expr where
   toInteger (Float f) = truncate f
   quotRem (Integer i) (Integer j) = (Integer (i `quot` j), Integer (i `rem` j))
   (Integer i) `mod` (Integer j) = Integer (i `mod` j)
-  (Integer i) `mod` (Float j) = Float (fromIntegral i `mod` j)
-  (Float i) `mod` (Integer j) = Float (i `mod` fromIntegral j)
-
+  (Integer i) `mod` (Float j) = Float (fromIntegral i `mod'` j)
+  (Float i) `mod` (Integer j) = Float (i `mod'` fromIntegral j)
+  (Float i) `mod` (Float j) = Float (i `mod'` j)
 
 instance Show Expr where
   show (Integer i) = show i

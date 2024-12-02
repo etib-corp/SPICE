@@ -6,14 +6,6 @@ import System.Exit
 import Control.Applicative
 import Ast
 
-getExpr :: AST Expr -> Expr
-getExpr (Node (Integer i) []) = Integer i
-getExpr (Node (Float f) []) = Float f
-getExpr (Node (Var v) []) = Var v
-getExpr (Node (Operator o) (e1:e2:[])) = ArithmeticOp o (getExpr e1) (getExpr e2)
-getExpr (Node (Declarator s) []) = Declarator s
-getExpr (Node (List l) []) = List (l)
-
 pushEnv :: Expr -> Expr -> Env -> Env
 pushEnv k v e = e <> Env [(k, v)]
 
@@ -49,9 +41,31 @@ baseOp e1 e2 op env = case (e1, e2) of
     _ -> Nothing
   _ -> Nothing
 
+getExpr :: AST Expr -> Env -> Expr
+getExpr (Node (Integer i) []) _ = Integer i
+getExpr (Node (Float f) []) _ = Float f
+getExpr (Node (Var v) []) _ = Var v
+getExpr (Node (Operator "+") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (+) e of
+  Just e' -> e'
+  Nothing -> ArithmeticOp "+" (getExpr e1 e) (getExpr e2 e)
+getExpr (Node (Operator "-") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (-) e of
+  Just e' -> e'
+  Nothing -> ArithmeticOp "-" (getExpr e1 e) (getExpr e2 e)
+getExpr (Node (Operator "*") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (*) e of
+  Just e' -> e'
+  Nothing -> ArithmeticOp "*" (getExpr e1 e) (getExpr e2 e)
+getExpr (Node (Operator "div") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (/) e of
+  Just e' -> e'
+  Nothing -> ArithmeticOp "div" (getExpr e1 e) (getExpr e2 e)
+getExpr (Node (Operator "mod") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) mod e of
+  Just e' -> e'
+  Nothing -> ArithmeticOp "mod" (getExpr e1 e) (getExpr e2 e)
+getExpr (Node (Declarator s) []) e = Declarator s
+getExpr (Node (List l) []) e = List (l)
+
 createStack :: [Expr] -> [Expr] -> Env -> Env
 createStack [] [] env = env
-createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y x env)
+createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y (getExpr (createAst x) env) env)
 
 walker :: AST Expr -> Env -> IO Env
 walker (Node (Integer i) []) e = return e
@@ -61,14 +75,14 @@ walker (Node (Var v) []) e = do
   case v' of
     Just v'' -> print v'' >> return e
     Nothing -> putStrLn ("*** ERROR : variable " ++ v ++" is not bound.") >> return e
-walker (Node (Operator "=") (e1:e2:[])) env = return . pushEnv (getExpr e1) (getExpr e2) $ env
-walker (Node (Operator "+") (e1:e2:[])) env = print (baseOp (getExpr e1) (getExpr e2) (+) env) >> return env
-walker (Node (Operator "div") (e1:e2:[])) env = print (baseOp (getExpr e1) (getExpr e2) (/) env) >> return env
-walker (Node (Operator "-") (e1:e2:[])) env = print (baseOp (getExpr e1) (getExpr e2) (-) env) >> return env
-walker (Node (Operator "mod") (e1:e2:[])) env = print (baseOp (getExpr e1) (getExpr e2) mod env) >> return env
-walker (Node (Operator "*") (e1:e2:[])) env = print (baseOp (getExpr e1) (getExpr e2) (*) env) >> return env
+walker (Node (Operator "=") (e1:e2:[])) env = return . pushEnv (getExpr e1 env) (getExpr e2 env) $ env
+walker (Node (Operator "+") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (+) env) >> return env
+walker (Node (Operator "div") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (/) env) >> return env
+walker (Node (Operator "-") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (-) env) >> return env
+walker (Node (Operator "mod") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) mod env) >> return env
+walker (Node (Operator "*") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (*) env) >> return env
 walker (Node (List []) l) e = foldM (\acc x -> walker x acc >>= \newEnv -> return (acc <> newEnv)) e l
-walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (List [getExpr var, getExpr exp]) $ e
+walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (List [getExpr var e, getExpr exp e]) $ e
 walker (Node (Call s) [Node (List argNodes) []]) env =
   case getInEnv (Declarator s) env of
     Just (List [List vars, exp]) -> case length argNodes == length vars of
