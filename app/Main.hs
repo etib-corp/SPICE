@@ -1,6 +1,7 @@
 module Main (main) where
 
 import Lib
+import Prompt
 
 main :: IO ()
-main = putStrLn "hello"
+main = performCLI defaultPrompt returnString
