@@ -33,6 +33,7 @@ library
       NewParser
       Structures
       Prompt
+      Files
   other-modules:
       Paths_spice
   autogen-modules:
