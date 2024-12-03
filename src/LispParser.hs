@@ -67,7 +67,7 @@ parseCallableExpr = Callable
 
 -- | Parses a lisp variable and returns it as a generic Expression.
 parseVar :: Parser Expr
-parseVar = fmap Var (parseString <|> fail "Invalid variable name")
+parseVar = fmap Var (parseName <|> fail "Invalid variable name")
 
 -- | Parses a lisp list and returns it as a generic Expression.
 parseList :: Parser Expr
