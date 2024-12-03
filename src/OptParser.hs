@@ -8,29 +8,20 @@ import System.Environment
 
 data Options = Options
   { optVerbose :: Bool
-  , optInput :: String
-  , optOutput :: String
+  , files :: [String]
   }
 
 instance Show Options where
-  show (Options v i o) = "Options { optVerbose = " ++ show v ++ ", optInput = " ++ i ++ ", optOutput = " ++ o ++ " }"
+  show (Options a b) = "Options { optVerbose = " ++ show a ++ ", files = " ++ show b ++ " }"
 
 options :: Parser Options
-options = Options
+options = Option
   <$> switch
     ( long "verbose"
     <> short 'v'
     <> help "Enable verbose messages" )
-  <*> strOption
-    ( long "input"
-    <> short 'i'
-    <> metavar "INPUT"
-    <> help "Input file" )
-  <*> strOption
-    ( long "output"
-    <> short 'o'
-    <> metavar "OUTPUT"
-    <> help "Output file" )
+  <*> many (argument str (metavar "FILES..."))
+
 
 handleParseResultCustom :: ParserResult Options -> IO Options
 handleParseResultCustom result = case result of
