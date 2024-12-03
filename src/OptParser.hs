@@ -15,7 +15,7 @@ instance Show Options where
   show (Options a b) = "Options { optVerbose = " ++ show a ++ ", files = " ++ show b ++ " }"
 
 options :: Parser Options
-options = Option
+options = Options
   <$> switch
     ( long "verbose"
     <> short 'v'
