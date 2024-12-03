@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- optparse-applicative
 - text
 
 ghc-options:
@@ -49,6 +50,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - spice
+    - optparse-applicative
     - text
 
 tests:
@@ -61,4 +63,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - spice
+    - optparse-applicative
+    - HUnit
     - text
