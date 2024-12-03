@@ -72,6 +72,18 @@ createStack :: [Expr] -> [Expr] -> Env -> Env
 createStack [] [] env = env
 createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y (getExpr (createAst x) env) env)
 
+getOnlyExpr :: AST Expr -> Expr
+getOnlyExpr (Node (Integer i) []) = Integer i
+getOnlyExpr (Node (Float f) []) = Float f
+getOnlyExpr (Node (Var v) []) = Var v
+getOnlyExpr (Node (Operator "+") (e1:e2:[])) = ArithmeticOp ("+") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Operator "-") (e1:e2:[])) = ArithmeticOp ("-") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Operator "*") (e1:e2:[])) = ArithmeticOp ("*") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Operator "div") (e1:e2:[])) = ArithmeticOp ("div") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Operator "mod") (e1:e2:[])) = ArithmeticOp ("mod") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Declarator s) []) = Declarator s
+getOnlyExpr (Node (List l) []) = List l
+
 walker :: AST Expr -> Env -> IO Env
 walker (Node (Integer i) []) e = return e
 walker (Node (Float f) []) e = return e
@@ -98,6 +110,10 @@ walker (Node (Operator "div") (e1:e2:[])) env =
   case baseOp (getExpr e1 env) (getExpr e2 env) (/) env of
     Right e' -> print e' >> return env
     Left err -> putStrLn ("*** ERROR: " ++ err) >> return env
+walker (Node (Operator "/") (e1:e2:[])) env =
+  case baseOp (getExpr e1 env) (getExpr e2 env) (/) env of
+    Right e' -> print e' >> return env
+    Left err -> putStrLn ("*** ERROR: " ++ err) >> return env
 walker (Node (Operator "mod") (e1:e2:[])) env =
   case baseOp (getExpr e1 env) (getExpr e2 env) mod env of
     Right e' -> print e' >> return env
@@ -106,7 +122,7 @@ walker (Node (Operator "<") (e1:e2:[])) env = case (getExpr e1) env < (getExpr e
   True -> putStrLn "#t" >> return env
   False -> putStrLn "#f" >> return env
 walker (Node (List []) l) e = foldM (\acc x -> walker x acc >>= \newEnv -> return (acc <> newEnv)) e l
-walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (List [getExpr var e, getExpr exp e]) $ e
+walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (List [getExpr var e, getOnlyExpr exp]) $ e
 walker (Node (Call s) [Node (List argNodes) []]) env =
   case getInEnv (Declarator s) env of
     Just (List [List vars, exp]) -> case length argNodes == length vars of
