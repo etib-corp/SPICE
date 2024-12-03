@@ -10,6 +10,8 @@ import System.Exit
 import LispParser
 import Structures
 import MyParser
+import Ast
+import Eval
 
 getFile :: [String] -> IO String
 getFile (x:[]) = secureGetContent x <|> error
@@ -17,15 +19,21 @@ getFile (x:[]) = secureGetContent x <|> error
     error = exitWith (ExitFailure 84)
 
 parseFile :: String -> IO ()
-parseFile content = case parse content parseLispExpressionTest of
+parseFile content = case parse content parseExpression of
   Left err -> putStrLn $ "Error: " ++ show err
-  Right expr -> putStrLn $ show expr
+  Right expr -> eval (createAst expr) emptyEnv >> return ()
+
+compiler :: String -> Env -> IO Env
+compiler str env = case parse str parseExpression of
+  Left err -> do
+    putStrLn $ "Error: " ++ show err
+    return env -- Return the current environment (or some default Env)
+  Right expr -> eval (createAst expr) env
 
 choseMode :: Options -> IO ()
 choseMode (Options v f) = case length f of
-  0 -> performCLI defaultPrompt returnString
+  0 -> performCLI defaultPrompt emptyEnv compiler
   _ -> getFile f >>= parseFile
-
 
 main :: IO ()
 main = choseMode =<< getOptions

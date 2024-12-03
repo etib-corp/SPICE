@@ -106,3 +106,6 @@ instance Semigroup Env where
 
 instance Monoid Env where
   mempty = Env []
+
+emptyEnv :: Env
+emptyEnv = Env []

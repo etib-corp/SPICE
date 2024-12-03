@@ -7,6 +7,7 @@ import Prelude
 import Lib
 
 import Data.Char
+import Structures
 
 import System.IO
 import System.Exit
@@ -20,17 +21,17 @@ fillCLI cmd (Prompt p h _) = Prompt p (h ++ [cmd]) cmd
 displayHelp :: IO ()
 displayHelp = putStrLn "HELP"
 
-interpreter :: Command -> (String -> String) -> IO ()
-interpreter "quit" _ = exitSuccess
-interpreter "help" _ = displayHelp
-interpreter cmd perf = (putStrLn $ (perf cmd))
+interpreter :: Command -> Env -> (String -> Env -> IO Env) -> IO Env
+interpreter "quit" _ _ = exitSuccess
+interpreter "env" e _ = putStrLn (show e) >> return e
+interpreter cmd env perf = perf cmd env
 
-performCLI :: CLI -> (String -> String) -> IO ()
-performCLI cli perform = getInput >>= (\cmd -> (compile cmd) >> (recurse cmd))
+performCLI :: CLI -> Env -> (String -> Env -> IO Env) -> IO ()
+performCLI cli env perform = getInput >>= (\cmd -> (compile cmd env) >>= \e  -> (recurse cmd e))
     where
         getInput    = (putStr (prompt cli) *> hFlush stdout *> getLine)
-        compile cmd = interpreter cmd perform
-        recurse cmd = (performCLI (fillCLI cmd cli) perform)
+        compile cmd env = interpreter cmd env perform
+        recurse cmd env = (performCLI (fillCLI cmd cli) env perform)
 
 defaultPrompt :: CLI
 defaultPrompt = Prompt "<SPICE> " [] ""
