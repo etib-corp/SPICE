@@ -87,7 +87,7 @@ instance Show Expr where
   show (Declarator n) = n
   show (Call n) = n
 
-data AST a = Empty | Node a [AST a] 
+data AST a = Empty | Node a [AST a]
 
 instance (Show a) => Show (AST a) where
   show Empty = ""
