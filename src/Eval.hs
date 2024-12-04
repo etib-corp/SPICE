@@ -7,9 +7,6 @@ import Control.Applicative
 import Ast
 import Debug.Trace
 
-type EvalM a = Either String a
-
-
 pushEnv :: Expr -> Expr -> Env -> Env
 pushEnv k v e = e <> Env [(k, v)]
 
@@ -43,6 +40,24 @@ baseOp e1 e2 op env = case (e1, e2) of
     Just (Integer i') -> Right (op e1 (Integer i'))
     Just (Float f') -> Right (op e1 (Float f'))
     _ -> Left ("Variable " ++ show v ++ " is not bound.")
+  _ -> Left "Invalid operation: incompatible types"
+
+checkEquality :: AST Expr -> AST Expr -> Env -> Either String Bool
+checkEquality e1 e2 env = case (getExpr e1 env, getExpr e2 env) of
+  (Right e1', Right e2') ->
+    case (e1', e2') of
+      (Var v1, Var v2) -> case (getInEnv (Var v1) env, getInEnv (Var v2) env) of
+        (Just e1'', Just e2'') -> Right $ e1'' == e2''
+        _ -> Left ("*** ERROR : variables " ++ show v1 ++ " or " ++ show v2 ++ " are not bound.")
+      (Var v, e) -> case getInEnv (Var v) env of
+        Just e' -> Right $  e' == e
+        _ -> Left ("*** ERROR : variable " ++ show v ++ " is not bound.")
+      (e, Var v) -> case getInEnv (Var v) env of
+        Just e' -> Right $ e' == e
+        _ -> Left ("*** ERROR : variable " ++ show v ++ " is not bound.")
+      _ -> Right (e1' == e2')
+  (Left err, _) -> Left err
+  (_, Left err) -> Left err
   _ -> Left "Invalid operation: incompatible types"
 
 getExpr :: AST Expr -> Env -> Either String Expr
@@ -85,6 +100,23 @@ getExpr (Node (Call s) [Node (List argNodes) []]) e = case getInEnv (Declarator 
       else Left ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
                   " arguments, but " ++ show (length argNodes) ++ " were given.")
   Nothing -> Left ("*** ERROR : function " ++ s ++ " is not bound.")
+getExpr (Node (Operator "eq?") (e1:e2:[])) e = case checkEquality e1 e2 e of
+  Right True -> Right (Integer 1)
+  Right False -> Right (Integer 0)
+  Left err -> Left err
+getExpr (Node (Statement "if") (c:t:e:[])) env =
+  case getExpr c env of
+    Right (Var v) -> case getInEnv (Var v) env of
+      Just (Integer i) | i == 0 -> getExpr e env
+                       | otherwise -> getExpr t env
+      Just (Float f) | f == 0 -> getExpr e env
+                     | otherwise -> getExpr t env
+      _ -> Left ("*** ERROR : variable " ++ v ++ " is not bound.")
+    Right (Integer i) | i == 0 -> getExpr e env
+                      | otherwise -> getExpr t env
+    Right (Float f) | f == 0 -> getExpr e env
+                    | otherwise -> getExpr t env
+    _ -> Left ("*** ERROR : invalid condition.")
 getExpr s e = trace (show s) (error "Invalid expression")
 
 getOnlyExpr :: AST Expr -> Expr
@@ -96,6 +128,9 @@ getOnlyExpr (Node (Operator "-") (e1:e2:[])) = ArithmeticOp ("-") (getOnlyExpr e
 getOnlyExpr (Node (Operator "*") (e1:e2:[])) = ArithmeticOp ("*") (getOnlyExpr e1) (getOnlyExpr e2)
 getOnlyExpr (Node (Operator "div") (e1:e2:[])) = ArithmeticOp ("div") (getOnlyExpr e1) (getOnlyExpr e2)
 getOnlyExpr (Node (Operator "mod") (e1:e2:[])) = ArithmeticOp ("mod") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Operator "eq?") (e1:e2:[])) = ArithmeticOp ("eq?") (getOnlyExpr e1) (getOnlyExpr e2)
+getOnlyExpr (Node (Statement "if") (c:t:e:[])) = If (getOnlyExpr c) (getOnlyExpr t) (getOnlyExpr e)
+getOnlyExpr (Node (Call s) [Node (List argNodes) []]) = Callable s (fmap getOnlyExpr (fmap createAst argNodes))
 getOnlyExpr (Node (Declarator s) []) = Declarator s
 getOnlyExpr (Node (List l) []) = List l
 
@@ -138,6 +173,10 @@ walker (Node (Operator "*") (e1:e2:[])) env = exucuteArithmetic e1 e2 (*) env
 walker (Node (Operator "div") (e1:e2:[])) env = exucuteArithmetic e1 e2 (/) env
 walker (Node (Operator "/") (e1:e2:[])) env = exucuteArithmetic e1 e2 (/) env
 walker (Node (Operator "mod") (e1:e2:[])) env = exucuteArithmetic e1 e2 mod env
+walker (Node (Operator "eq?") (e1:e2:[])) env = case checkEquality e1 e2 env of
+  Right True -> putStrLn "#t" >> return env
+  Right False -> putStrLn "#f" >> return env
+  Left err -> putStrLn err >> return env
 walker (Node (Operator "<") (e1:e2:[])) env = case (getExpr e1) env < (getExpr e2) env of
   True -> putStrLn "#t" >> return env
   False -> putStrLn "#f" >> return env
@@ -151,22 +190,21 @@ walker (Node (Call s) [Node (List argNodes) []]) env =
   case getInEnv (Declarator s) env of
     Just (List [List vars, exp]) -> case length argNodes == length vars of
       True -> case createStack argNodes vars env of
-        Right env' -> walker (createAst exp) (env' <> env)
+        Right env' -> trace (show env') $ walker (createAst exp) (env' <> (Env [(Declarator s, List [List vars, exp])])) >> return env
         Left err -> putStrLn err >> return env
       False -> putStrLn ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
                          " arguments, but " ++ show (length argNodes) ++ " were given.") >> return env
     Nothing -> putStrLn ("*** ERROR : function " ++ s ++ " is not bound.") >> return env
   where
-    -- Correct spelling and define `execute`
     execute :: Expr -> Env -> IO Env
     execute e env = walker (createAst e) env
 walker (Node (Statement "if") (c:t:e:[])) env =
   case getExpr c env of
     Right (Var v) -> case getInEnv (Var v) env of
-      Just (Integer i) | i == 0 -> walker e env
-                       | otherwise -> walker t env
-      Just (Float f) | f == 0 -> walker e env
-                     | otherwise -> walker t env
+      Just (Integer i) | i == 0 -> walker t env
+                       | otherwise -> walker e env
+      Just (Float f) | f == 0 -> walker t env
+                     | otherwise -> walker e env
       _ -> putStrLn ("*** ERROR : variable " ++ v ++ " is not bound.") >> return env
     Right (Integer i) | i == 0 -> walker e env
                       | otherwise -> walker t env
