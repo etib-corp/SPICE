@@ -5,6 +5,8 @@ import Control.Monad (foldM)  -- Import foldM to handle monads
 import System.Exit
 import Control.Applicative
 import Ast
+import Debug.Trace
+
 
 pushEnv :: Expr -> Expr -> Env -> Env
 pushEnv k v e = e <> Env [(k, v)]
@@ -44,7 +46,7 @@ baseOp e1 e2 op env = case (e1, e2) of
 getExpr :: AST Expr -> Env -> Expr
 getExpr (Node (Integer i) []) _ = Integer i
 getExpr (Node (Float f) []) _ = Float f
-getExpr (Node (Var v) []) _ = Var v
+getExpr (Node (Var v) []) e = Var v
 getExpr (Node (Operator "+") (e1:e2:[])) e =
   case baseOp (getExpr e1 e) (getExpr e2 e) (+) e of
     Right e' -> e'
@@ -67,10 +69,8 @@ getExpr (Node (Operator "mod") (e1:e2:[])) e =
     Left err -> error err
 getExpr (Node (Declarator s) []) e = Declarator s
 getExpr (Node (List l) []) e = List (l)
-
-createStack :: [Expr] -> [Expr] -> Env -> Env
-createStack [] [] env = env
-createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y (getExpr (createAst x) env) env)
+getExpr (Node (Call s) [Node (List argNodes) []]) e = trace (show e) $ Callable s (argNodes)
+getExpr s e = trace (show s) (error "Invalid expression")
 
 getOnlyExpr :: AST Expr -> Expr
 getOnlyExpr (Node (Integer i) []) = Integer i
@@ -83,6 +83,10 @@ getOnlyExpr (Node (Operator "div") (e1:e2:[])) = ArithmeticOp ("div") (getOnlyEx
 getOnlyExpr (Node (Operator "mod") (e1:e2:[])) = ArithmeticOp ("mod") (getOnlyExpr e1) (getOnlyExpr e2)
 getOnlyExpr (Node (Declarator s) []) = Declarator s
 getOnlyExpr (Node (List l) []) = List l
+
+createStack :: [Expr] -> [Expr] -> Env -> IO Env
+createStack [] [] env = return env
+createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y (getExpr (createAst x) env) env)
 
 walker :: AST Expr -> Env -> IO Env
 walker (Node (Integer i) []) e = return e
@@ -126,7 +130,7 @@ walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (L
 walker (Node (Call s) [Node (List argNodes) []]) env =
   case getInEnv (Declarator s) env of
     Just (List [List vars, exp]) -> case length argNodes == length vars of
-      True -> execute exp (createStack argNodes vars env) >> return env
+      True -> (createStack argNodes vars env) >>= \e -> execute exp e >> return env
       False -> putStrLn ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
                          " arguments, but " ++ show (length argNodes) ++ " were given.") >> return env
     Nothing -> putStrLn ("*** ERROR : function " ++ s ++ " is not bound.") >> return env

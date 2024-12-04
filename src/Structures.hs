@@ -85,8 +85,9 @@ instance Show Expr where
   show (If c t e1 e2) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e1 ++ " end"
   show (Callable n args) = n ++ "(" ++ unwords (map show args) ++ ")"
   show (Declarator n) = n
+  show (Call n) = n
 
-data AST a = Empty | Node a [AST a]
+data AST a = Empty | Node a [AST a] 
 
 instance (Show a) => Show (AST a) where
   show Empty = ""
