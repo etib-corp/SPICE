@@ -89,6 +89,11 @@ instance Integral Expr where
 
 data AST a = Empty | Node a [AST a]
 
+instance Eq a => Eq (AST a) where
+  Empty == Empty = True
+  (Node a xs) == (Node b ys) = a == b && xs == ys
+  _ == _ = False
+
 instance (Show a) => Show (AST a) where
   show Empty = ""
   show (Node a []) = show a
@@ -99,6 +104,9 @@ instance Functor AST where
   fmap f (Node a xs) = Node (f a) (map (fmap f) xs)
 
 data Env = Env { variables :: [(Expr, Expr)] } deriving (Show)
+
+instance Eq Env where
+    (Env xs) == (Env ys) = xs == ys
 
 instance Semigroup Env where
   Env xs <> Env ys = Env (removeDuplicates (ys ++ xs))

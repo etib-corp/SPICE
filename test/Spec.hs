@@ -5,6 +5,10 @@ import OptParser
 import Options.Applicative
 import System.Environment
 
+import TestAst
+import TestOptParser
+import TestStructures
+
 testOptionsParsing :: Test
 testOptionsParsing = TestList
   [ TestCase $ do
@@ -47,7 +51,8 @@ testHelpOutput = TestList
         _ -> return () -- Expected failure
   ]
 
+
 main :: IO ()
 main = do
-  _ <- runTestTT $ TestList [testOptionsParsing, testShowOptions, testHelpOutput]
+  _ <- runTestTT $ TestList [testOptionsParsing, testShowOptions, testHelpOutput, testsAst, testOptParser, testStructures]
   return ()
