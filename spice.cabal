@@ -68,6 +68,9 @@ test-suite spice-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      TestAst
+      TestOptParser
+      TestStructures
       Paths_spice
   autogen-modules:
       Paths_spice
