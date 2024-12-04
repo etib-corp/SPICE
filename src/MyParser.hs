@@ -12,6 +12,7 @@ import Data.Functor.Identity
 import Data.List
 import Data.Char
 import Debug.Trace
+import Structures
 
 -- | Represents an error in the parsing process, including a message and
 -- the position in the input where the error occurred.
@@ -155,3 +156,6 @@ parseDouble = check >>= \ s ->
         Just x -> pure x
     where
         check = fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)
+
+test :: Either Error Expr -> Expr
+test (Right expr) = expr
