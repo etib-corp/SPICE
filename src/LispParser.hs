@@ -18,6 +18,11 @@ parseOperator = fmap Operator (parseGivenString "+" <|>
                                parseGivenString "/" <|>
                                parseGivenString "*" <|> fail "Failed to parse operator")
 
+
+-- | Parses a lisp builtin variable and returns it as a generic Expression.
+parseBoolean :: Parser Expr
+parseBoolean = fmap Integer (parseGivenString "#t" $> 1 <|> parseGivenString "#f" $> 0 <|> fail "Failed to parse boolean")
+
 -- | Parses left parenthesis with arounding whitespaces.
 parseLeftParenthesis :: Parser ()
 parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
@@ -42,7 +47,7 @@ parseArithmeticOp = parseLeftParenthesis *> parseArithmeticExpr <* parseRightPar
 parseArithmeticExpr :: Parser Expr
 parseArithmeticExpr = ArithmeticOp
     <$> ((parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*"
-        <|> parseGivenString "/" <|> parseGivenString "define") <|> fail "Invalid declaration")
+        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define") <|> fail "Invalid declaration")
     <*> (parseWhiteSpaces *> (parseExpression <|> parseVar))
     <*> (parseWhiteSpaces *> (parseExpression <|> parseVar))
 
@@ -92,6 +97,6 @@ parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseExpression) <*> parseE
 
 -- | Parses a lisp expression and returns it as a generic Expression.
 parseExpression :: Parser Expr
-parseExpression = parseFunction <|> parseArithmeticOp <|> parseInteger <|>
+parseExpression = parseFunction <|> parseArithmeticOp <|> parseBoolean <|> parseInteger <|>
                   parseList <|> parseFloat <|> parseOperator <|> (parseIf <|>
                   parseCallable) <|> parseVar
