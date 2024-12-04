@@ -22,13 +22,13 @@ data Expr
   | Function Name [Name] Expr   -- Parsed
   | ArithmeticOp Name Expr Expr -- Parsed
   | List [Expr]                 -- Parsed
-  | If Expr Name Expr Expr      -- Parsed
+  | If Expr Expr Expr           -- Parsed
   -- | Call Name [Expr]
   -- | Function Name [Name] Expr
   -- | Extern Name [Name]
   -- | ArithmeticOp Name Expr Expr
   -- | UnaryOp Name Expr
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 instance Num Expr where
   (Integer i) + (Integer j) = Integer (i + j)
@@ -74,18 +74,18 @@ instance Integral Expr where
   (Float i) `mod` (Integer j) = Float (i `mod'` fromIntegral j)
   (Float i) `mod` (Float j) = Float (i `mod'` j)
 
-instance Show Expr where
-  show (Integer i) = show i
-  show (Float f) = show f
-  show (Var v) = v
-  show (Operator o) = o
-  show (List l) = show l
-  show (ArithmeticOp o e1 e2) = show e1 ++ " " ++ show o ++ " " ++ show e2
-  show (Function n args e) = n ++ "(" ++ unwords args ++ ") = " ++ show e
-  show (If c t e1 e2) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e1 ++ " end"
-  show (Callable n args) = n ++ "(" ++ unwords (map show args) ++ ")"
-  show (Declarator n) = n
-  show (Call n) = n
+-- instance Show Expr where
+--   show (Integer i) = show i
+--   show (Float f) = show f
+--   show (Var v) = v
+--   show (Operator o) = o
+--   show (List l) = show l
+--   show (ArithmeticOp o e1 e2) = show e1 ++ " " ++ show o ++ " " ++ show e2
+--   show (Function n args e) = n ++ "(" ++ unwords args ++ ") = " ++ show e
+--   show (If c t e1 e2) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e1 ++ " end"
+--   show (Callable n args) = n ++ "(" ++ unwords (map show args) ++ ")"
+--   show (Declarator n) = n
+--   show (Call n) = n
 
 data AST a = Empty | Node a [AST a]
 
