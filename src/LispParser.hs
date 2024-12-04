@@ -47,9 +47,11 @@ parseArithmeticOp = parseLeftParenthesis *> parseArithmeticExpr <* parseRightPar
 parseArithmeticExpr :: Parser Expr
 parseArithmeticExpr = ArithmeticOp
     <$> ((parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*"
-        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define") <|> fail "Invalid declaration")
-    <*> (parseWhiteSpaces *> (parseExpression <|> parseVar))
-    <*> (parseWhiteSpaces *> (parseExpression <|> parseVar))
+        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define") <|> fail "Invalid declaration. Expected: [+, -, *, /, eq?, define].")
+    <*> parseExpr
+    <*> parseExpr
+    where
+        parseExpr = ((parseWhiteSpaces *> (parseExpression <|> parseVar)) <|> fail ("Invalid call or expression. Expected a variable name or a Lisp expression."))
 
 -- | Parses a lisp function and returns it as a generic Expression.
 parseFunction :: Parser Expr
