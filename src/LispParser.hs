@@ -62,7 +62,7 @@ parseCallableExpr :: Parser Expr
 parseCallableExpr = Callable
     <$> parseName
     <*> (parseWhiteSpaces
-        *> (parseSepBy parseExpression parseWhiteSpaces <|> pure [])
+        *> (parseSepBy (parseExpression <|> parseVar) parseWhiteSpaces <|> pure [])
         <* parseWhiteSpaces)
 
 -- | Parses a lisp variable and returns it as a generic Expression.
@@ -92,6 +92,6 @@ parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseString) <*> parseExpr 
 
 -- | Parses a lisp expression and returns it as a generic Expression.
 parseExpression :: Parser Expr
-parseExpression = parseArithmeticOp <|> parseInteger <|>
+parseExpression = parseFunction <|> parseArithmeticOp <|> parseInteger <|>
                   parseList <|> parseFloat <|> parseOperator <|>
-                  parseFunction <|> parseCallable <|> parseIf
+                  parseCallable <|> parseIf
