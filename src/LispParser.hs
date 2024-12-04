@@ -93,5 +93,5 @@ parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseExpression) <*> parseE
 -- | Parses a lisp expression and returns it as a generic Expression.
 parseExpression :: Parser Expr
 parseExpression = parseFunction <|> parseArithmeticOp <|> parseInteger <|>
-                  parseList <|> parseFloat <|> parseOperator <|>
-                  parseCallable <|> parseIf
+                  parseList <|> parseFloat <|> parseOperator <|> (parseIf <|>
+                  parseCallable) <|> parseVar

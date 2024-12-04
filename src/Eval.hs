@@ -69,7 +69,13 @@ getExpr (Node (Operator "mod") (e1:e2:[])) e =
     Left err -> error err
 getExpr (Node (Declarator s) []) e = Declarator s
 getExpr (Node (List l) []) e = List (l)
-getExpr (Node (Call s) [Node (List argNodes) []]) e = trace (show e) $ Callable s (argNodes)
+getExpr (Node (Call s) [Node (List argNodes) []]) e = case getInEnv (Declarator s) e of
+  Just (List [List vars, exp]) ->
+    if length argNodes == length vars
+      then getExpr (createAst exp) (createStack argNodes vars e)
+      else error ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
+                  " arguments, but " ++ show (length argNodes) ++ " were given.")
+  Nothing -> error ("*** ERROR : function " ++ s ++ " is not bound.")
 getExpr s e = trace (show s) (error "Invalid expression")
 
 getOnlyExpr :: AST Expr -> Expr
@@ -84,8 +90,8 @@ getOnlyExpr (Node (Operator "mod") (e1:e2:[])) = ArithmeticOp ("mod") (getOnlyEx
 getOnlyExpr (Node (Declarator s) []) = Declarator s
 getOnlyExpr (Node (List l) []) = List l
 
-createStack :: [Expr] -> [Expr] -> Env -> IO Env
-createStack [] [] env = return env
+createStack :: [Expr] -> [Expr] -> Env -> Env
+createStack [] [] env = env
 createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y (getExpr (createAst x) env) env)
 
 walker :: AST Expr -> Env -> IO Env
@@ -130,7 +136,7 @@ walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (L
 walker (Node (Call s) [Node (List argNodes) []]) env =
   case getInEnv (Declarator s) env of
     Just (List [List vars, exp]) -> case length argNodes == length vars of
-      True -> (createStack argNodes vars env) >>= \e -> execute exp e >> return env
+      True -> execute exp ((createStack argNodes vars env) <> env) >> return env
       False -> putStrLn ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
                          " arguments, but " ++ show (length argNodes) ++ " were given.") >> return env
     Nothing -> putStrLn ("*** ERROR : function " ++ s ++ " is not bound.") >> return env
@@ -138,6 +144,9 @@ walker (Node (Call s) [Node (List argNodes) []]) env =
     -- Correct spelling and define `execute`
     execute :: Expr -> Env -> IO Env
     execute e env = walker (createAst e) env
+walker (Node (Statement "if") (c:t:e:[])) env = case getExpr c env of
+  (Integer 0) -> walker t env
+  (Integer _) -> walker e env
 walker _ e = return e
 
 eval :: AST Expr -> Env -> IO Env
