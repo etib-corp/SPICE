@@ -21,15 +21,15 @@ parseOperator = fmap Operator (parseGivenString "+" <|>
 
 -- | Parses a lisp builtin variable and returns it as a generic Expression.
 parseBoolean :: Parser Expr
-parseBoolean = fmap Integer (parseGivenString "#t" $> 1 <|> parseGivenString "#f" $> 0 <|> fail "Failed to parse boolean")
+parseBoolean = fmap Integer (parseGivenString "#t" $> 1 <|> parseGivenString "#f" $> 0 <|> fail "Failed to parse boolean. ")
 
 -- | Parses left parenthesis with arounding whitespaces.
 parseLeftParenthesis :: Parser ()
-parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces)
 
 -- | Parses right parenthesis with arounding whitespaces.
 parseRightParenthesis :: Parser ()
-parseRightParenthesis = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+parseRightParenthesis = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces)
 
 -- | Parses a lisp integer and returns it as a generic Expression.
 parseInteger :: Parser Expr

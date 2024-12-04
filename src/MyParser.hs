@@ -59,7 +59,8 @@ instance Monad (ParsecT m) where
 
 -- MonadFail instance for 'ParsecT', supporting failure with a custom message.
 instance MonadFail (ParsecT m) where
-    fail message = ParsecT (\ s _ ko -> ko (Error message (position s)) s)
+    fail message = ParsecT
+        (\ s _ ko -> ko (Error (message ++ " !! Error occured here:-> '" ++ (getUntilBackspace (str s)) ++ "'. !!") (position s)) s)
 
 -- | A specialized type alias for parsers that do not involve additional monads.
 type Parser = ParsecT Identity
