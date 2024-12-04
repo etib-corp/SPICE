@@ -81,7 +81,7 @@ parseListExpr = fmap List ((parseGivenString "list" *> parseWhiteSpaces *>
 
 -- | Parses a lisp list if and returns it as a generic Expression.
 parseIf :: Parser Expr
-parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseString) <*> parseExpr <*> parseExpr
+parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseExpression) <*> parseExpr
     where
         parseStart = (parseLeftParenthesis *> parseGivenString "if" *> parseWhiteSpaces *> parseExpression)
         parseExpr = (parseWhiteSpaces *> parseExpression <* parseRightParenthesis)
