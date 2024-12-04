@@ -21,15 +21,15 @@ parseOperator = fmap Operator (parseGivenString "+" <|>
 
 -- | Parses a lisp builtin variable and returns it as a generic Expression.
 parseBoolean :: Parser Expr
-parseBoolean = fmap Integer (parseGivenString "#t" $> 1 <|> parseGivenString "#f" $> 0 <|> fail "Failed to parse boolean")
+parseBoolean = fmap Integer (parseGivenString "#t" $> 1 <|> parseGivenString "#f" $> 0 <|> fail "Failed to parse boolean. ")
 
 -- | Parses left parenthesis with arounding whitespaces.
 parseLeftParenthesis :: Parser ()
-parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces)
 
 -- | Parses right parenthesis with arounding whitespaces.
 parseRightParenthesis :: Parser ()
-parseRightParenthesis = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+parseRightParenthesis = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces)
 
 -- | Parses a lisp integer and returns it as a generic Expression.
 parseInteger :: Parser Expr
@@ -47,9 +47,11 @@ parseArithmeticOp = parseLeftParenthesis *> parseArithmeticExpr <* parseRightPar
 parseArithmeticExpr :: Parser Expr
 parseArithmeticExpr = ArithmeticOp
     <$> ((parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*"
-        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define") <|> fail "Invalid declaration")
-    <*> (parseWhiteSpaces *> (parseExpression <|> parseVar))
-    <*> (parseWhiteSpaces *> (parseExpression <|> parseVar))
+        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define") <|> fail "Invalid declaration. Expected: [+, -, *, /, eq?, define].")
+    <*> parseExpr
+    <*> parseExpr
+    where
+        parseExpr = ((parseWhiteSpaces *> (parseExpression <|> parseVar)) <|> fail ("Invalid call or expression. Expected a variable name or a Lisp expression."))
 
 -- | Parses a lisp function and returns it as a generic Expression.
 parseFunction :: Parser Expr
