@@ -190,7 +190,7 @@ walker (Node (Call s) [Node (List argNodes) []]) env =
   case getInEnv (Declarator s) env of
     Just (List [List vars, exp]) -> case length argNodes == length vars of
       True -> case createStack argNodes vars env of
-        Right env' -> trace (show env') $ walker (createAst exp) (env' <> (Env [(Declarator s, List [List vars, exp])])) >> return env
+        Right env' -> walker (createAst exp) (env' <> (Env [(Declarator s, List [List vars, exp])])) >> return env
         Left err -> putStrLn err >> return env
       False -> putStrLn ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
                          " arguments, but " ++ show (length argNodes) ++ " were given.") >> return env
