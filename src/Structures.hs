@@ -22,7 +22,7 @@ data Expr
   | Function Name [Name] Expr   -- Parsed
   | ArithmeticOp Name Expr Expr -- Parsed
   | List [Expr]                 -- Parsed
-  | If Expr Name Expr Expr      -- Parsed
+  | If Expr Expr Expr           -- Parsed
   -- | Call Name [Expr]
   -- | Function Name [Name] Expr
   -- | Extern Name [Name]
@@ -82,11 +82,17 @@ instance Show Expr where
   show (List l) = show l
   show (ArithmeticOp o e1 e2) = show e1 ++ " " ++ show o ++ " " ++ show e2
   show (Function n args e) = n ++ "(" ++ unwords args ++ ") = " ++ show e
-  show (If c t e1 e2) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e1 ++ " end"
+  show (If c t e) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e
   show (Callable n args) = n ++ "(" ++ unwords (map show args) ++ ")"
   show (Declarator n) = n
+  show (Call n) = n
 
 data AST a = Empty | Node a [AST a]
+
+instance Eq a => Eq (AST a) where
+  Empty == Empty = True
+  (Node a xs) == (Node b ys) = a == b && xs == ys
+  _ == _ = False
 
 instance (Show a) => Show (AST a) where
   show Empty = ""
@@ -99,6 +105,9 @@ instance Functor AST where
 
 data Env = Env { variables :: [(Expr, Expr)] } deriving (Show)
 
+instance Eq Env where
+    (Env xs) == (Env ys) = xs == ys
+
 instance Semigroup Env where
   Env xs <> Env ys = Env (removeDuplicates (ys ++ xs))
     where
@@ -106,3 +115,6 @@ instance Semigroup Env where
 
 instance Monoid Env where
   mempty = Env []
+
+emptyEnv :: Env
+emptyEnv = Env []

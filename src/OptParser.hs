@@ -38,3 +38,6 @@ getOptions = execParserPure customPrefs opts <$> getArgs >>= handleParseResultCu
     opts = info (options <**> helper)
       ( fullDesc )
     customPrefs = prefs $ showHelpOnError
+
+instance Eq Options where
+  (Options v1 f1) == (Options v2 f2) = v1 == v2 && f1 == f2
