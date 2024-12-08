@@ -14,6 +14,9 @@ module NewParser (
     , parseOpener
     , parseCloser
     , myMapFirst
+    , parseExpo         -- Ajouter cette ligne
+    , parseNumber
+    , spaces
     ) where
 
 import Lib

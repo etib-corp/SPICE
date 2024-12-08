@@ -69,6 +69,10 @@ test-suite spice-test
   main-is: Spec.hs
   other-modules:
       TestAst
+      TestFiles
+      TestLib
+      TestMyParser
+      TestNewParser
       TestOptParser
       TestStructures
       Paths_spice
@@ -81,6 +85,8 @@ test-suite spice-test
       HUnit
     , base >=4.7 && <5
     , optparse-applicative
+    , silently
     , spice
+    , temporary
     , text
   default-language: Haskell2010
