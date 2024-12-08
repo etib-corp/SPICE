@@ -8,6 +8,10 @@ import System.Environment
 import TestAst
 import TestOptParser
 import TestStructures
+import TestLib
+import TestFiles
+import TestMyParser
+import TestNewParser
 
 testOptionsParsing :: Test
 testOptionsParsing = TestList
@@ -54,5 +58,16 @@ testHelpOutput = TestList
 
 main :: IO ()
 main = do
-  _ <- runTestTT $ TestList [testOptionsParsing, testShowOptions, testHelpOutput, testsAst, testOptParser, testStructures]
+  _ <- runTestTT $ TestList [
+    testOptionsParsing
+    , testShowOptions
+    , testHelpOutput
+    , testsAst
+    , testOptParser
+    , testStructures
+    , testLib
+    , testFiles
+    , testMyParser
+    , testNewParser
+    ]
   return ()

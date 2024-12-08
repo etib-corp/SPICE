@@ -18,6 +18,10 @@ import Structures
 -- the position in the input where the error occurred.
 data Error = Error { msg :: String, pos :: Int } deriving (Show)
 
+-- Ajouter l'instance Eq pour pouvoir comparer les erreurs dans les tests
+instance Eq Error where
+    (Error msg1 pos1) == (Error msg2 pos2) = msg1 == msg2 && pos1 == pos2
+
 -- | Represents the state of the parser, including the remaining input
 -- string and the current position.
 data State = State { str :: String, position :: Int} deriving (Show)
