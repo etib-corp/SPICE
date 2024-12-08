@@ -14,14 +14,27 @@ import Ast
 import Eval
 
 getFile :: [String] -> IO String
-getFile (x:[]) = secureGetContent x <|> error
+getFile ([x]) = secureGetContent x <|> error
   where
     error = exitWith (ExitFailure 84)
 
-parseFile :: String -> IO ()
-parseFile content = case parse content parseExpression of
-  Left err -> putStrLn $ "Error: " ++ show err
-  Right expr -> eval (createAst expr) emptyEnv >> return ()
+
+
+parseFileLine :: String -> Env -> IO Env
+parseFileLine content e = case parse content parseExpression of
+  Left err -> putStrLn ("Error: " ++ show err) >> return e
+  Right expr -> do eval (createAst expr) e
+
+parseFileWithStartEnv :: String -> Env -> IO Env
+parseFileWithStartEnv content e = case lines content of
+    [] -> return e
+    (x:xs) -> do
+      env <- parseFileLine x e
+      -- print env : If you want to print the environment after each line
+      parseFileWithStartEnv (unlines xs) env
+
+parseFile :: String -> IO Env
+parseFile content = parseFileWithStartEnv content emptyEnv
 
 compiler :: String -> Env -> IO Env
 compiler str env = case parse str parseExpression of
@@ -33,7 +46,7 @@ compiler str env = case parse str parseExpression of
 choseMode :: Options -> IO ()
 choseMode (Options v f) = case length f of
   0 -> performCLI defaultPrompt emptyEnv compiler
-  _ -> getFile f >>= parseFile
+  _ -> getFile f >>= parseFile >> return ()
 
 main :: IO ()
 main = choseMode =<< getOptions

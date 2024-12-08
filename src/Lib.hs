@@ -7,6 +7,7 @@ module Lib
     , wLast
     , lastChar
     , catFile
+    , getUntilBackspace
     ) where
 
 import Data.Text (pack)
@@ -44,3 +45,8 @@ lastChar (_:xs) = lastChar xs
 catFile :: String -> IO ()
 catFile path = do
     (readFile path) >>= putStrLn
+
+getUntilBackspace :: String -> String
+getUntilBackspace [] = []
+getUntilBackspace (x:xs)    | x == '\n' = []
+                            | otherwise = x : getUntilBackspace xs
