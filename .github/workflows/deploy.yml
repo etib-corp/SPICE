@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 17-feat-host-docs
 
 jobs:
   build:
