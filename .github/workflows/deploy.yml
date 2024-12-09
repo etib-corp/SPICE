@@ -22,4 +22,7 @@ jobs:
         run: pip install mkdocs
 
       - name: Deploy to GitHub Pages
-        run: mkdocs gh-deploy --force
+        # run: mkdocs gh-deploy --force
+        run: |
+          mkdocs build --config-file docs/mkdocs.yml
+          mkdocs gh-deploy --config-file docs/mkdocs.yml --force
