@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://etib-corp.github.io/SPICE/tutorial/usage/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Usage - GLADOS USER DOC</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Usage";
+        var mkdocs_page_input_path = "tutorial/usage.md";
+        var mkdocs_page_url = "/SPICE/tutorial/usage/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> GLADOS USER DOC
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../about-mkdocs/">About MkDocs</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Tutorial</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../installation/">Installation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../advanced/">Advanced</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Usage</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#cli-help">CLI help</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#docs">DOCS</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#build-spice">Build SPICE</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#usage_1">Usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#spice-features">SPICE Features</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#clean-spice-repository">Clean SPICE repository</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">GLADOS USER DOC</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Tutorial</li>
+      <li class="breadcrumb-item active">Usage</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://etib-corp.github.io/SPICE/edit/master/docs/docs/tutorial/usage.md">Edit on Etib-Corp</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="usage">Usage</h1>
+<blockquote>
+<p>Build and preview a site locally</p>
+</blockquote>
+<p>Make sure to run all commands from the <code>root</code> directory, as that is where <code>Makefile</code> is.</p>
+<pre><code class="language-sh">$ cd SPICE
+</code></pre>
+<h2 id="cli-help">CLI help</h2>
+<pre><code class="language-sh">$ ./glados --help   // Integration in progress
+</code></pre>
+<p>or</p>
+<pre><code class="language-sh">$ ./glados -h   // Integration in progress
+</code></pre>
+<!-- ```
+default: install
+all: install build
+h help:
+install:
+upgrade:
+s serve:
+b build:
+d deploy:
+``` -->
+
+<h2 id="docs">DOCS</h2>
+<p>Please check the main repository</p>
+<pre><code>https://github.com/etib-corp/SPICE?tab=readme-ov-file#readme
+</code></pre>
+<!-- Then open in your browser:
+
+- [localhost:8000](http://localhost:8000) -->
+
+<h2 id="build-spice">Build SPICE</h2>
+<p>Build SPICE compiler.</p>
+<pre><code class="language-sh">$ make
+</code></pre>
+<p>or</p>
+<pre><code class="language-sh">$ make build
+</code></pre>
+<h2 id="usage_1">Usage</h2>
+<p>Use this project in two ways: read from a file or interact directly via prompt input</p>
+<pre><code class="language-sh">$ ./glados &lt; foo.scm
+</code></pre>
+<p>or</p>
+<pre><code class="language-sh">&gt; foo
+*** ERROR : variable foo is not bound.
+&gt; (define foo 42)
+&gt; foo
+42
+</code></pre>
+<h2 id="spice-features">SPICE Features</h2>
+<p>Function declaration :</p>
+<pre><code>(define add
+(lambda (a b)
+(+ a b)))
+(add 3 4)
+</code></pre>
+<p>Builtin's function :</p>
+<pre><code>(+ (* 2 3) (div 10 2))
+(* (* 2 3) (div 10 2))
+(- (* 2 3) (div 10 2))
+(eq (* 2 3) (div 10 2))
+(&lt; (* 2 3) (div 10 2))
+(div (* 2 3) (div 10 2))
+</code></pre>
+<p>Conditional jump:</p>
+<pre><code>(if #t 1 2)
+</code></pre>
+<h2 id="clean-spice-repository">Clean SPICE repository</h2>
+<p>Clean repository.</p>
+<pre><code class="language-sh">$ make clean
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../advanced/" class="btn btn-neutral float-left" title="Advanced"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://etib-corp.github.io/SPICE/" class="fa fa-code-fork" style="color: #fcfcfc"> Etib-Corp</a>
+        </span>
+    
+    
+      <span><a href="../advanced/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
