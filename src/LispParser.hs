@@ -16,7 +16,10 @@ parseOperator = fmap Operator (parseGivenString "+" <|>
                                parseGivenString "-" <|>
                                parseGivenString "=" <|>
                                parseGivenString "/" <|>
-                               parseGivenString "*" <|> fail "Failed to parse operator")
+                               parseGivenString "*" <|>
+                               parseGivenString "div" <|>
+                               parseGivenString "mod" <|>
+                               fail "Failed to parse operator")
 
 
 -- | Parses a lisp builtin variable and returns it as a generic Expression.

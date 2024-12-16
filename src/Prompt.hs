@@ -29,7 +29,10 @@ interpreter cmd env perf = perf cmd env
 performCLI :: CLI -> Env -> (String -> Env -> IO Env) -> IO ()
 performCLI cli env perform = getInput >>= (\cmd -> (compile cmd env) >>= \e  -> (recurse cmd e))
     where
-        getInput    = (putStr (prompt cli) *> hFlush stdout *> getLine)
+        catchAndGet     = do
+            isClosed <- isEOF
+            if isClosed then exitSuccess else getLine
+        getInput        = (putStr (prompt cli) *> hFlush stdout *> catchAndGet)
         compile cmd env = interpreter cmd env perform
         recurse cmd env = (performCLI (fillCLI cmd cli) env perform)
 
