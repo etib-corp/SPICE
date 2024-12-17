@@ -12,6 +12,9 @@ tests_run:
 clean:
 	stack clean
 
+fclean: clean
+		rm -f $(NAME)
+
 re: clean all
 
 .PHONY: all build clean
