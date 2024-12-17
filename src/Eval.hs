@@ -117,6 +117,13 @@ getExpr (Node (Statement "if") (c:t:e:[])) env =
     Right (Float f) | f == 0 -> getExpr e env
                     | otherwise -> getExpr t env
     _ -> Left ("*** ERROR : invalid condition.")
+getExpr (Node (Operator "eq?") (e1:e2:[])) e = case checkEquality e1 e2 e of
+  Right True -> Right (Integer 1)
+  Right False -> Right (Integer 0)
+  Left err -> Left err
+getExpr (Node (Operator "<") (e1:e2:[])) e = case (getExpr e1 e) < (getExpr e2 e) of
+  True -> Right (Integer 1)
+  False -> Right (Integer 0)
 getExpr s e = trace (show s) (error "Invalid expression")
 
 getOnlyExpr :: AST Expr -> Expr
@@ -130,6 +137,7 @@ getOnlyExpr (Node (Operator "div") (e1:e2:[])) = ArithmeticOp ("div") (getOnlyEx
 getOnlyExpr (Node (Operator "mod") (e1:e2:[])) = ArithmeticOp ("mod") (getOnlyExpr e1) (getOnlyExpr e2)
 getOnlyExpr (Node (Operator "eq?") (e1:e2:[])) = ArithmeticOp ("eq?") (getOnlyExpr e1) (getOnlyExpr e2)
 getOnlyExpr (Node (Statement "if") (c:t:e:[])) = If (getOnlyExpr c) (getOnlyExpr t) (getOnlyExpr e)
+getOnlyExpr (Node (Operator "<") (e1:e2:[])) = ArithmeticOp ("<") (getOnlyExpr e1) (getOnlyExpr e2)
 getOnlyExpr (Node (Call s) [Node (List argNodes) []]) = Callable s (fmap getOnlyExpr (fmap createAst argNodes))
 getOnlyExpr (Node (Declarator s) []) = Declarator s
 getOnlyExpr (Node (List l) []) = List l
