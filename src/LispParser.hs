@@ -17,8 +17,6 @@ parseOperator = fmap Operator (parseGivenString "+" <|>
                                parseGivenString "=" <|>
                                parseGivenString "/" <|>
                                parseGivenString "*" <|>
-                               parseGivenString "div" <|>
-                               parseGivenString "mod" <|>
                                fail "Failed to parse operator")
 
 
@@ -50,7 +48,7 @@ parseArithmeticOp = parseLeftParenthesis *> parseArithmeticExpr <* parseRightPar
 parseArithmeticExpr :: Parser Expr
 parseArithmeticExpr = ArithmeticOp
     <$> ((parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*"
-        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define") <|> fail "Invalid declaration. Expected: [+, -, *, /, eq?, define].")
+        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define" <|> parseGivenString "div" <|> parseGivenString "mod" <|> parseGivenString "<") <|> fail "Invalid declaration. Expected: [+, -, *, /, eq?, define].")
     <*> parseExpr
     <*> parseExpr
     where
