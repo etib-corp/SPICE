@@ -10,6 +10,14 @@ import Debug.Trace
 pushEnv :: Expr -> Expr -> Env -> Env
 pushEnv k v e = e <> Env [(k, v)]
 
+getVar :: Expr -> Env -> Either String Expr
+getVar (Integer i) _ = Right (Integer i)
+getVar (Float f) _ = Right (Float f)
+getVar (Var v) e = case getInEnv (Var v) e of
+  Just v' -> getVar v' e
+  Nothing -> Left ("*** ERROR : variable " ++ v ++ " is not bound.")
+getVar _ _ = Left "Invalid expression"
+
 getInEnv :: Expr -> Env -> Maybe Expr
 getInEnv k (Env []) = Nothing
 getInEnv k (Env ((k', v):xs)) | k == k' = Just v
@@ -21,24 +29,20 @@ baseOp e1 e2 op env = case (e1, e2) of
   (Float f1, Float f2) -> Right (op e1 e2)
   (Integer i, Float f) -> Right (op e1 e2)
   (Float f, Integer i) -> Right (op e1 e2)
-  (Var v, Integer i) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Right (op (Integer i') e2)
-    Just (Float f') -> Right (op (Float f') e2)
+  (Var v, Integer i) -> case getVar (Var v) env of
+    Right s -> Right $ op (s) (Integer i)
     _ -> Left ("Variable " ++ show v ++ " is not bound.")
-  (Integer i, Var v) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Right (op e1 (Integer i'))
-    Just (Float f') -> Right (op e1 (Float f'))
+  (Integer i, Var v) -> case getVar (Var v) env of
+    Right s -> Right $ op (s) (Integer i)
     _ -> Left ("Variable " ++ show v ++ " is not bound.")
-  (Var v1, Var v2) -> case (getInEnv (Var v1) env, getInEnv (Var v2) env) of
-    (Just e1', Just e2') -> baseOp e1' e2' op env
+  (Var v1, Var v2) -> case (getVar (Var v1) env, getVar (Var v2) env) of
+    (Right e1', Right e2') -> baseOp e1' e2' op env
     _ -> Left ("Variables " ++ show v1 ++ " or " ++ show v2 ++ " is not bound.")
-  (Var v, Float f) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Right (op (Integer i') e2)
-    Just (Float f') -> Right (op (Float f') e2)
+  (Var v, Float f) -> case getVar (Var v) env of
+    Right s -> Right $ op (s) (Float f)
     _ -> Left ("Variable " ++ show v ++ " is not bound.")
-  (Float f, Var v) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Right (op e1 (Integer i'))
-    Just (Float f') -> Right (op e1 (Float f'))
+  (Float f, Var v) -> case getVar (Var v) env of
+    Right s -> Right $ op (s) (Float f)
     _ -> Left ("Variable " ++ show v ++ " is not bound.")
   _ -> Left "Invalid operation: incompatible types"
 
@@ -121,9 +125,11 @@ getExpr (Node (Operator "eq?") (e1:e2:[])) e = case checkEquality e1 e2 e of
   Right True -> Right (Integer 1)
   Right False -> Right (Integer 0)
   Left err -> Left err
-getExpr (Node (Operator "<") (e1:e2:[])) e = case (getExpr e1 e) < (getExpr e2 e) of
-  True -> Right (Integer 1)
-  False -> Right (Integer 0)
+getExpr (Node (Operator "<") (e1:e2:[])) e =
+  case checkEquality e1 e2 e of
+    Right True -> Right (Integer 1)
+    Right False -> Right (Integer 0)
+    Left err -> Left err
 getExpr s e = trace (show s) (error "Invalid expression")
 
 getOnlyExpr :: AST Expr -> Expr
@@ -160,11 +166,10 @@ exucuteArithmetic e1 e2 op e =
 walker :: AST Expr -> Env -> IO Env
 walker (Node (Integer i) []) e = print i >> return e
 walker (Node (Float f) []) e = print f >> return e
-walker (Node (Var v) []) e = do
-  let v' = getInEnv (Var v) e
-  case v' of
-    Just v'' -> print v'' >> return e
-    Nothing -> putStrLn ("*** ERROR : variable " ++ v ++" is not bound.") >> return e
+walker (Node (Var v) []) e =
+  case getVar (Var v) e of
+    Left s -> putStrLn s >> return e
+    Right v' -> putStrLn (show v') >> return e
 walker (Node (Operator "=") (e1:e2:[])) env =
   case (getExpr e1 env, getExpr e2 env) of
     (Right e1', Right e2') -> return . pushEnv e1' e2' $ env
