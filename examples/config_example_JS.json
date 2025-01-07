@@ -1,0 +1,165 @@
+{
+    "declarators": {
+        "variable": {
+            "prefix": {
+                "prefix": null,
+                "main": ["let", "const", "var"],
+                "suffix": null
+            },
+            "content": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "suffix": {
+                "prefix": null,
+                "main": "=",
+                "suffix": null
+            },
+            "value": {
+                "prefix": null,
+                "main": "",
+                "suffix": ";"
+            }
+        },
+        "function": {
+            "prefix": {
+                "prefix": null,
+                "main": "function",
+                "suffix": null
+            },
+            "content": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "suffix": {
+                "prefix": "(",
+                "main": {
+                    "separator": ",",
+                    "content": ""
+                },
+                "suffix": ")"
+            },
+            "value": {
+                "prefix": "{",
+                "main": "",
+                "suffix": "}"
+            }
+        }
+    },
+    "loop": {
+        "if": {
+            "prefix": {
+                "prefix": null,
+                "main": "if",
+                "suffix": null
+            },
+            "content": {
+                "prefix": "(",
+                "main": "",
+                "suffix": ")"
+            },
+            "suffix": {
+                "prefix": null,
+                "main": "then",
+                "suffix": null
+            },
+            "value": {
+                "prefix": "{",
+                "main": "",
+                "suffix": "}"
+            }
+        }
+    },
+    "operations": {
+        "addition": {
+            "prefix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "content": {
+                "prefix": null,
+                "main": "+",
+                "suffix": null
+            },
+            "suffix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "value": {
+                "prefix": null,
+                "main": "",
+                "suffix": ""
+            }
+        },
+        "subtraction": {
+            "prefix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "content": {
+                "prefix": null,
+                "main": "-",
+                "suffix": null
+            },
+            "suffix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "value": {
+                "prefix": null,
+                "main": "",
+                "suffix": ""
+            }
+        },
+        "multiplication": {
+            "prefix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "content": {
+                "prefix": null,
+                "main": "*",
+                "suffix": null
+            },
+            "suffix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "value": {
+                "prefix": null,
+                "main": "",
+                "suffix": ""
+            }
+        },
+        "division": {
+            "prefix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "content": {
+                "prefix": null,
+                "main": "/",
+                "suffix": null
+            },
+            "suffix": {
+                "prefix": null,
+                "main": "",
+                "suffix": null
+            },
+            "value": {
+                "prefix": null,
+                "main": "",
+                "suffix": ""
+            }
+        }
+    }
+}

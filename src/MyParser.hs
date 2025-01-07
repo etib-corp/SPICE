@@ -162,5 +162,5 @@ parseDouble = check >>= \ s ->
     where
         check = (fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)) <|> fail "Invalid float."
 
-test :: Either Error Expr -> Expr
-test (Right expr) = expr
+parseStringInQuotes :: Parser String
+parseStringInQuotes = parseChar '"' *> parseSomeUntil parseAnyChar (satisfy (== '"'))
