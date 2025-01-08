@@ -116,6 +116,9 @@ parseNoneOf s = satisfy (\ c -> not $ elem c s)
 parseString :: Parser String
 parseString = parseSomeUntil parseAnyChar (satisfy isWhiteSpace)
 
+parseString' :: Parser String
+parseString' = some (satisfy isAlpha)
+
 -- | Parses while it can parse with a separator parser given as parameter.
 parseSepBy :: Parser a -> Parser b -> Parser [a]
 parseSepBy p1 p2 = (:) <$> p1 <*> (many (p2 *> p1))

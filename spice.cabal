@@ -28,10 +28,10 @@ library
       Ast
       Eval
       Files
+      GLP
       Lib
       LispParser
       MyParser
-      NewParser
       OptParser
       Prompt
       Structures
