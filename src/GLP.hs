@@ -7,7 +7,7 @@ import LispParser
 import Control.Applicative
 import Data.Functor
 
-data ParserConfig = ParserConfig { parseBoolean' :: Parser Expr, parserOperator :: Parser Expr }
+data ParserConfig = ParserConfig { parseBoolean' :: Parser Expr, parserOperator :: [Parser Expr] }
 
 unquote :: String -> String
 unquote [] = ""
@@ -42,13 +42,16 @@ createOperatorParser ("expression":"expression":op:[]) = do
     return $ ArithmeticOp name leftExpr rightExpr
 createOperatorParser _ = fail "Invalid Operator configuration: expected 3 elements defined (operator, right expression, left expression)."
 
-parseOperatorConfig :: Parser (Parser Expr)
-parseOperatorConfig = do
+parseOperatorConfig' :: Parser (Parser Expr)
+parseOperatorConfig' = do
     (parseDeclarator) *> parseWhiteSpaces
     plusValue <- parseSepBy (parseString <|> parseString') (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
     pure $ createOperatorParser plusValue
         where
             parseDeclarator = parseGivenString "plus:" <|> parseGivenString "minus:" <|> parseGivenString "multiply:" <|> parseGivenString "divide:" <|> parseGivenString "modulo:" <|> parseGivenString "equal:"
+
+parseOperatorConfig :: Parser [Parser Expr]
+parseOperatorConfig = parseGivenString "operations:" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig') (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
 
 getConfig :: String -> ParserConfig
 getConfig config = ParserConfig {
@@ -60,9 +63,17 @@ getConfig config = ParserConfig {
         Right parser -> parser
 }
 
+extractValidParser :: String -> [Parser a] -> Either Error a
+extractValidParser str [x] = case parse str x of
+    Left (Error msg pos) -> Left (Error ("Unknown operator. " ++ msg) pos)
+    Right value -> Right value
+extractValidParser str (x:xs) = case parse str x of
+    Left _ -> extractValidParser str xs
+    Right value -> Right value
+
 parseConfigTest :: IO ()
-parseConfigTest = case parse "minus: expression -> \"-\" -> expression" parseOperatorConfig of
+parseConfigTest = case parse "operations: [ minus: expression -> \"-\" -> expression , plus: expression -> \"+\" -> expression ]" parseOperatorConfig of
     Left err -> putStrLn $ show err
-    Right pa -> case parse "1 - 2" pa of
+    Right pa -> case extractValidParser "1 + 2" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
