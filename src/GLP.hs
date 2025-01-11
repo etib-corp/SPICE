@@ -13,6 +13,19 @@ unquote :: String -> String
 unquote [] = ""
 unquote str = init $ tail str
 
+parseConfigString :: Parser String
+parseConfigString = parseString <|> parseString'
+
+parseQuotedString :: Parser String
+parseQuotedString = parseChar '"' *> parseManyUntil parseAnyChar (parseChar '"')
+
+parseFormatters :: Parser (String, String)
+parseFormatters = (,) <$> (parseGivenString "{prefix:" *> parseWhiteSpaces *> parseQuotedString) 
+  <*>
+  (parseChar ',' *> parseWhiteSpaces *> parseGivenString "suffix:" *> parseWhiteSpaces *>
+  parseQuotedString
+  <* parseWhiteSpaces <* parseGivenString "}")
+
 createBooleanParser :: [String] -> Parser Expr
 createBooleanParser (x:y:[]) = fmap Integer (parseGivenString x $> 1 <|> parseGivenString y $> 0)
 createBooleanParser _ = fail "Invalid boolean configuration: expected two values."
@@ -23,6 +36,13 @@ parseBooleanConfig = do
     boolValues <- parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces)
     parseChar ']' *> parseWhiteSpaces
     pure $ createBooleanParser boolValues
+
+parseTestConfig :: Parser (Parser Expr)
+parseTestConfig = do 
+    parseGivenString "test"
+    a <- parseFormatters
+    pure $ parseExprInFormatter a
+
 
 createOperatorParser :: [String] -> Parser Expr
 createOperatorParser (op:"expression":"expression":[]) =
@@ -45,7 +65,7 @@ createOperatorParser _ = fail "Invalid Operator configuration: expected 3 elemen
 parseOperatorConfig' :: Parser (Parser Expr)
 parseOperatorConfig' = do
     (parseDeclarator) *> parseWhiteSpaces
-    plusValue <- parseSepBy (parseString <|> parseString') (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
+    plusValue <- parseSepBy parseConfigString (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
     pure $ createOperatorParser plusValue
         where
             parseDeclarator = parseGivenString "plus:" <|> parseGivenString "minus:" <|> parseGivenString "multiply:" <|> parseGivenString "divide:" <|> parseGivenString "modulo:" <|> parseGivenString "equal:"
@@ -70,6 +90,18 @@ extractValidParser str [x] = case parse str x of
 extractValidParser str (x:xs) = case parse str x of
     Left _ -> extractValidParser str xs
     Right value -> Right value
+
+
+parseExprInFormatter :: (String, String) -> Parser Expr
+parseExprInFormatter (left, right) = parseGivenString left *> parseExpression <* parseGivenString right
+parseExprInFormatter _ = fail "Failed to parse formatters"
+
+parseConfigTestFormatter :: String -> IO()
+parseConfigTestFormatter s = case parse "test{prefix: \"<\",suffix:\">\"}" parseTestConfig of
+    Left err -> putStrLn $ show err
+    Right p -> case parse s p of
+        Left err -> putStrLn $ show err
+        Right result -> putStrLn $ show result
 
 parseConfigTest :: IO ()
 parseConfigTest = case parse "operations: [ minus: expression -> \"-\" -> expression , plus: expression -> \"+\" -> expression ]" parseOperatorConfig of
