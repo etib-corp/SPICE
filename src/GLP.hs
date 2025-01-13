@@ -6,6 +6,7 @@ import LispParser
 
 import Control.Applicative
 import Data.Functor
+import Data.Char
 
 type Formatter = (String, String)
 
@@ -104,9 +105,35 @@ parseConditionConfig = do
     (parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
     pure $ parseExpression
 
+loopedParser :: [String] -> Parser String
+loopedParser [] = fail "Can not parse any elements of given table."
+loopedParser (x:xs) = parseGivenString x <|> loopedParser xs
+
+createVariableConfig' :: [String] -> Parser Expr
+createVariableConfig' (('[':ys):"name":[]) = case parse ys (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces) of
+    Left err -> fail "Invalid `variable` configuration, certainly there is a missing ']'"
+    Right result -> fmap Var (loopedParser result *> parseWhiteSpaces *> (parseName <|> fail "Invalid variable name."))
+createVariableConfig' ("name":('[':ys):[]) = case parse ys (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces) of
+    Left err -> fail "Invalid `variable` configuration, certainly there is a missing ']'"
+    Right result -> fmap Var ((parseName <* parseWhiteSpaces <* loopedParser result) <|> fail "Invalid variable name.")
+createVariableConfig' tab = case length tab of
+    1 -> fail ("Invalid `variable` configuration, not enough elements which are defining a variable syntax. " ++ show tab)
+    _ -> fail ("Invalid `variable` configuration, too many elements which are defining a variable syntax. " ++ show tab)
+
+createVariableConfig :: [String] -> Formatter -> Parser Expr
+createVariableConfig [] _ = fail "Invalid `variable` configuration."
+createVariableConfig content (p,s) = parseGivenString p *> createVariableConfig' content <* parseGivenString s
+
+parseVariableConfig :: Parser (Parser Expr)
+parseVariableConfig = do
+    formatters <- parseGivenString "variable" *> parseFormatters <* parseGivenString ":" <* parseWhiteSpaces
+    first <- parseManyUntil parseAnyChar (parseChar ' ') <* parseWhiteSpaces <* parseGivenString "->" <* parseWhiteSpaces
+    second <- (parseConfigString <|> many (satisfy (isPrint)))
+    pure $ createVariableConfig [first,second] formatters
+
 parseConfigTest :: IO ()
-parseConfigTest = case parse "condition{prefix: \"(\", suffix: \")\"}: expression" parseConditionConfig of
+parseConfigTest = case parse "variable{prefix: \"(\", suffix: \")\"}: name -> [\"define\"]" parseVariableConfig of
     Left err -> putStrLn $ show err
-    Right pa -> case parse "(eq? 1 2)" pa of
+    Right pa -> case parse "(a define)" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
