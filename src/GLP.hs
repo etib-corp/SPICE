@@ -45,12 +45,6 @@ parseBooleanConfig = do
     parseChar ']' *> parseWhiteSpaces
     pure (createBooleanParser boolValues formatter)
 
--- parseTestConfig :: Parser (ConfigExpr)
--- parseTestConfig = do
---     parseGivenString "test"
---     a <- parseFormatters
---     pure $ parseExprInFormatter a
-
 createOperatorParser :: [String] -> Formatter -> Parser Expr
 createOperatorParser (op:"expression":"expression":[]) (p,s) =
     ArithmeticOp <$>
@@ -84,16 +78,6 @@ parseOperatorConfig = do
     formatters <- parseFormatters
     parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
 
--- getConfig :: String -> ParserConfig
--- getConfig config = ParserConfig {
---     parseBoolean' = case parse config parseBooleanConfig of
---         Left _ -> fail "Failed to parse boolean configuration."
---         Right parser -> parser,
---     parserOperator = case parse config parseOperatorConfig of
---         Left _ -> fail "Failed to parse operator configuration."
---         Right parser -> parser
--- }
-
 extractValidParser :: String -> [Parser a] -> Either Error a
 extractValidParser str [x] = case parse str x of
     Left (Error msg pos) -> Left (Error ("Unknown operator. " ++ msg) pos)
@@ -105,7 +89,7 @@ extractValidParser str (x:xs) = case parse str x of
 createParametersConfig :: [String] -> Formatter -> Parser [String]
 createParametersConfig ("name":y:[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName (parseGivenString y) <|> pure []) <* parseWhiteSpaces <* parseGivenString s
 createParametersConfig ("name":[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName parseWhiteSpaces <|> pure []) <* parseWhiteSpaces <* parseGivenString s
-createParametersConfig _ _ = fail "Invalid parameters configuration."
+createParametersConfig _ _ = fail "Invalid `parameters` configuration."
 
 parseParametersConfig :: Parser (Parser [String])
 parseParametersConfig = do
@@ -114,9 +98,15 @@ parseParametersConfig = do
     content <- parseSepBy (parseStringInQuotes <|> parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
     pure $ (createParametersConfig content formatters)
 
+parseConditionConfig :: Parser (Parser Expr)
+parseConditionConfig = do
+    formatters <- parseGivenString "condition" *> parseFormatters
+    (parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
+    pure $ parseExpression
+
 parseConfigTest :: IO ()
-parseConfigTest = case parse "parameters{prefix: \"(\", suffix: \")\"}: name -> \"->\"" parseParametersConfig of
+parseConfigTest = case parse "condition{prefix: \"(\", suffix: \")\"}: expression" parseConditionConfig of
     Left err -> putStrLn $ show err
-    Right pa -> case parse "(name->nome->nume)" pa of
+    Right pa -> case parse "(eq? 1 2)" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
