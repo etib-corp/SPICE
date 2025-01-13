@@ -16,15 +16,20 @@ unquote str = init $ tail str
 parseConfigString :: Parser String
 parseConfigString = parseString <|> parseString'
 
-parseQuotedString :: Parser String
-parseQuotedString = parseChar '"' *> parseManyUntil parseAnyChar (parseChar '"')
+parsePrefixConfig :: Parser String
+parsePrefixConfig = (parseGivenString "prefix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
+
+parseSuffixConfig :: Parser String
+parseSuffixConfig = (parseGivenString "suffix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
 
 parseFormatters :: Parser (String, String)
-parseFormatters = (,) <$> (parseGivenString "{prefix:" *> parseWhiteSpaces *> parseQuotedString) 
-  <*>
-  (parseChar ',' *> parseWhiteSpaces *> parseGivenString "suffix:" *> parseWhiteSpaces *>
-  parseQuotedString
-  <* parseWhiteSpaces <* parseGivenString "}")
+parseFormatters = do
+    parseGivenString "{" *> parseWhiteSpaces
+    prefix <- parsePrefixConfig
+    ((parseWhiteSpaces *> parseGivenString ",") <|> parseGivenString "") *> parseWhiteSpaces
+    suffix <- parseSuffixConfig
+    parseGivenString "}"
+    pure $ (prefix, suffix)
 
 createBooleanParser :: [String] -> Parser Expr
 createBooleanParser (x:y:[]) = fmap Integer (parseGivenString x $> 1 <|> parseGivenString y $> 0)
@@ -38,11 +43,10 @@ parseBooleanConfig = do
     pure $ createBooleanParser boolValues
 
 parseTestConfig :: Parser (Parser Expr)
-parseTestConfig = do 
+parseTestConfig = do
     parseGivenString "test"
     a <- parseFormatters
     pure $ parseExprInFormatter a
-
 
 createOperatorParser :: [String] -> Parser Expr
 createOperatorParser (op:"expression":"expression":[]) =
@@ -91,13 +95,12 @@ extractValidParser str (x:xs) = case parse str x of
     Left _ -> extractValidParser str xs
     Right value -> Right value
 
-
 parseExprInFormatter :: (String, String) -> Parser Expr
 parseExprInFormatter (left, right) = parseGivenString left *> parseExpression <* parseGivenString right
 parseExprInFormatter _ = fail "Failed to parse formatters"
 
 parseConfigTestFormatter :: String -> IO()
-parseConfigTestFormatter s = case parse "test{prefix: \"<\",suffix:\">\"}" parseTestConfig of
+parseConfigTestFormatter s = case parse "test{prefix: \"<\"}" parseTestConfig of
     Left err -> putStrLn $ show err
     Right p -> case parse s p of
         Left err -> putStrLn $ show err
