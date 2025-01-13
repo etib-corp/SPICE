@@ -7,6 +7,8 @@ import LispParser
 import Control.Applicative
 import Data.Functor
 
+type Formatter = (String, String)
+
 data ParserConfig = ParserConfig { parseBoolean' :: Parser Expr, parserOperator :: [Parser Expr] }
 
 unquote :: String -> String
@@ -22,7 +24,7 @@ parsePrefixConfig = (parseGivenString "prefix:" *> parseWhiteSpaces *> parseStri
 parseSuffixConfig :: Parser String
 parseSuffixConfig = (parseGivenString "suffix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
 
-parseFormatters :: Parser (String, String)
+parseFormatters :: Parser Formatter
 parseFormatters = do
     parseGivenString "{" *> parseWhiteSpaces
     prefix <- parsePrefixConfig
@@ -31,61 +33,66 @@ parseFormatters = do
     parseGivenString "}"
     pure $ (prefix, suffix)
 
-createBooleanParser :: [String] -> Parser Expr
-createBooleanParser (x:y:[]) = fmap Integer (parseGivenString x $> 1 <|> parseGivenString y $> 0)
-createBooleanParser _ = fail "Invalid boolean configuration: expected two values."
+createBooleanParser :: [String] -> Formatter -> Parser Expr
+createBooleanParser (x:y:[]) (p,s) = fmap Integer (parseGivenString p *> (parseGivenString x $> 1 <|> parseGivenString y $> 0) <* parseGivenString s)
+createBooleanParser _ _ = fail "Invalid boolean configuration: expected two values."
 
 parseBooleanConfig :: Parser (Parser Expr)
 parseBooleanConfig = do
-    parseGivenString "boolean:" *> parseWhiteSpaces *> parseChar '[' *> parseWhiteSpaces
+    formatter <- parseGivenString "boolean" *> parseFormatters
+    parseGivenString ":" *> parseWhiteSpaces *> parseChar '[' *> parseWhiteSpaces
     boolValues <- parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces)
     parseChar ']' *> parseWhiteSpaces
-    pure $ createBooleanParser boolValues
+    pure (createBooleanParser boolValues formatter)
 
-parseTestConfig :: Parser (Parser Expr)
-parseTestConfig = do
-    parseGivenString "test"
-    a <- parseFormatters
-    pure $ parseExprInFormatter a
+-- parseTestConfig :: Parser (ConfigExpr)
+-- parseTestConfig = do
+--     parseGivenString "test"
+--     a <- parseFormatters
+--     pure $ parseExprInFormatter a
 
-createOperatorParser :: [String] -> Parser Expr
-createOperatorParser (op:"expression":"expression":[]) =
+createOperatorParser :: [String] -> Formatter -> Parser Expr
+createOperatorParser (op:"expression":"expression":[]) (p,s) =
     ArithmeticOp <$>
-    parseGivenString (unquote op)
+    (parseGivenString p *> parseGivenString (unquote op))
     <*> (parseWhiteSpaces *> parseExpression)
     <*> (parseWhiteSpaces *> parseExpression)
-createOperatorParser ("expression":op:"expression":[]) = do
-    leftExpr <- parseExpression
+    <* parseGivenString s
+createOperatorParser ("expression":op:"expression":[]) (p,s) = do
+    leftExpr <- parseGivenString p *> parseExpression
     name <- parseWhiteSpaces *> parseGivenString (unquote op)
-    rightExpr <- parseWhiteSpaces *> parseExpression
+    rightExpr <- parseWhiteSpaces *> parseExpression <* parseGivenString s
     return $ ArithmeticOp name leftExpr rightExpr
-createOperatorParser ("expression":"expression":op:[]) = do
-    leftExpr <- parseExpression
+createOperatorParser ("expression":"expression":op:[]) (p,s) = do
+    leftExpr <- parseGivenString p *> parseExpression
     rightExpr <- parseWhiteSpaces *> parseExpression
-    name <- parseWhiteSpaces *> parseGivenString (unquote op)
+    name <- parseWhiteSpaces *> parseGivenString (unquote op) <* parseGivenString s
     return $ ArithmeticOp name leftExpr rightExpr
-createOperatorParser _ = fail "Invalid Operator configuration: expected 3 elements defined (operator, right expression, left expression)."
+createOperatorParser _ _ = fail "Invalid Operator configuration: expected 3 elements defined (operator, right expression, left expression)."
 
-parseOperatorConfig' :: Parser (Parser Expr)
-parseOperatorConfig' = do
+parseOperatorConfig' :: Formatter -> Parser (Parser Expr)
+parseOperatorConfig' f = do
     (parseDeclarator) *> parseWhiteSpaces
-    plusValue <- parseSepBy parseConfigString (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
-    pure $ createOperatorParser plusValue
+    operatorValue <- parseSepBy parseConfigString (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
+    pure $ createOperatorParser operatorValue f
         where
-            parseDeclarator = parseGivenString "plus:" <|> parseGivenString "minus:" <|> parseGivenString "multiply:" <|> parseGivenString "divide:" <|> parseGivenString "modulo:" <|> parseGivenString "equal:"
+            parseDeclarator = parseGivenString "plus:" <|> parseGivenString "minus:" <|> parseGivenString "multiply:" <|> parseGivenString "divide:" <|> parseGivenString "modulo:" <|> parseGivenString "equal:" <|> parseGivenString "assignation:"
 
 parseOperatorConfig :: Parser [Parser Expr]
-parseOperatorConfig = parseGivenString "operations:" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig') (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
+parseOperatorConfig = do
+    parseGivenString "operators"
+    formatters <- parseFormatters
+    parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
 
-getConfig :: String -> ParserConfig
-getConfig config = ParserConfig {
-    parseBoolean' = case parse config parseBooleanConfig of
-        Left _ -> fail "Failed to parse boolean configuration."
-        Right parser -> parser,
-    parserOperator = case parse config parseOperatorConfig of
-        Left _ -> fail "Failed to parse operator configuration."
-        Right parser -> parser
-}
+-- getConfig :: String -> ParserConfig
+-- getConfig config = ParserConfig {
+--     parseBoolean' = case parse config parseBooleanConfig of
+--         Left _ -> fail "Failed to parse boolean configuration."
+--         Right parser -> parser,
+--     parserOperator = case parse config parseOperatorConfig of
+--         Left _ -> fail "Failed to parse operator configuration."
+--         Right parser -> parser
+-- }
 
 extractValidParser :: String -> [Parser a] -> Either Error a
 extractValidParser str [x] = case parse str x of
@@ -95,20 +102,20 @@ extractValidParser str (x:xs) = case parse str x of
     Left _ -> extractValidParser str xs
     Right value -> Right value
 
-parseExprInFormatter :: (String, String) -> Parser Expr
-parseExprInFormatter (left, right) = parseGivenString left *> parseExpression <* parseGivenString right
-parseExprInFormatter _ = fail "Failed to parse formatters"
+-- parseExprInFormatter :: Formatter -> ConfigExpr
+-- parseExprInFormatter (left, right) = parseGivenString left *> parseExpression <* parseGivenString right
+-- parseExprInFormatter _ = fail "Failed to parse formatters"
 
-parseConfigTestFormatter :: String -> IO()
-parseConfigTestFormatter s = case parse "test{prefix: \"<\"}" parseTestConfig of
-    Left err -> putStrLn $ show err
-    Right p -> case parse s p of
-        Left err -> putStrLn $ show err
-        Right result -> putStrLn $ show result
+-- parseConfigTestFormatter :: String -> IO()
+-- parseConfigTestFormatter s = case parse "test{prefix: \"<\"}" parseTestConfig of
+--     Left err -> putStrLn $ show err
+--     Right p -> case parse s p of
+--         Left err -> putStrLn $ show err
+--         Right result -> putStrLn $ show result
 
 parseConfigTest :: IO ()
-parseConfigTest = case parse "operations: [ minus: expression -> \"-\" -> expression , plus: expression -> \"+\" -> expression ]" parseOperatorConfig of
+parseConfigTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression , minus: \"-\" -> expression -> expression , multiply: \"*\" -> expression -> expression , divide: \"/\" -> expression -> expression , modulo: \"%\" -> expression -> expression , equal: \"eq?\" -> expression -> expression ]" parseOperatorConfig of
     Left err -> putStrLn $ show err
-    Right pa -> case extractValidParser "1 + 2" pa of
+    Right pa -> case extractValidParser "(+ 1 2)" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
