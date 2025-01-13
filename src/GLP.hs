@@ -24,6 +24,9 @@ parsePrefixConfig = (parseGivenString "prefix:" *> parseWhiteSpaces *> parseStri
 parseSuffixConfig :: Parser String
 parseSuffixConfig = (parseGivenString "suffix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
 
+parseExpressionConfig :: Parser Expr
+parseExpressionConfig = parseInteger <|> parseBoolean
+
 parseFormatters :: Parser Formatter
 parseFormatters = do
     parseGivenString "{" *> parseWhiteSpaces
@@ -103,6 +106,29 @@ parseConditionConfig = do
     formatters <- parseGivenString "condition" *> parseFormatters
     (parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
     pure $ parseExpression
+
+createCodeBlockParser :: Formatter -> [String] -> Parser [Expr]
+createCodeBlockParser (p,s) (sep:l) = parseGivenString p *>
+    (parseSepBy parseExpressionConfig (parseGivenString sep) <* parseGivenString s) 
+    <|> createCodeBlockParser (p,s) l
+createCodeBlockParser _ _ = fail "Invalid code block"
+
+parseCodeBlockConfig :: Parser (Parser [Expr])
+parseCodeBlockConfig = do
+    parseGivenString "codeBlock"
+    formatters <- parseFormatters
+    parseWhiteSpaces *> parseGivenString ":" *> parseWhiteSpaces
+    separators <- parseGivenString "[" *>
+        parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
+        <* parseGivenString "]"
+    pure $ createCodeBlockParser formatters separators
+
+parseTestCodeBlock :: IO()
+parseTestCodeBlock = case parse "codeBlock{prefix: \"{\", suffix: \"}\"} : [\".\", \"\n\", \";\"] -> many(expression)" parseCodeBlockConfig of
+    Left err -> putStrLn $ show err
+    Right pa -> case parse "{#t\n1}" pa of
+        Left err -> putStrLn $ show err
+        Right result -> putStrLn $ show result
 
 parseConfigTest :: IO ()
 parseConfigTest = case parse "condition{prefix: \"(\", suffix: \")\"}: expression" parseConditionConfig of
