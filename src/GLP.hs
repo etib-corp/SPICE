@@ -102,20 +102,21 @@ extractValidParser str (x:xs) = case parse str x of
     Left _ -> extractValidParser str xs
     Right value -> Right value
 
--- parseExprInFormatter :: Formatter -> ConfigExpr
--- parseExprInFormatter (left, right) = parseGivenString left *> parseExpression <* parseGivenString right
--- parseExprInFormatter _ = fail "Failed to parse formatters"
+createParametersConfig :: [String] -> Formatter -> Parser [String]
+createParametersConfig ("name":y:[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName (parseGivenString y) <|> pure []) <* parseWhiteSpaces <* parseGivenString s
+createParametersConfig ("name":[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName parseWhiteSpaces <|> pure []) <* parseWhiteSpaces <* parseGivenString s
+createParametersConfig _ _ = fail "Invalid parameters configuration."
 
--- parseConfigTestFormatter :: String -> IO()
--- parseConfigTestFormatter s = case parse "test{prefix: \"<\"}" parseTestConfig of
---     Left err -> putStrLn $ show err
---     Right p -> case parse s p of
---         Left err -> putStrLn $ show err
---         Right result -> putStrLn $ show result
+parseParametersConfig :: Parser (Parser [String])
+parseParametersConfig = do
+    formatters <- parseGivenString "parameters" *> parseFormatters
+    parseGivenString ":" *> parseWhiteSpaces
+    content <- parseSepBy (parseStringInQuotes <|> parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
+    pure $ (createParametersConfig content formatters)
 
 parseConfigTest :: IO ()
-parseConfigTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression , minus: \"-\" -> expression -> expression , multiply: \"*\" -> expression -> expression , divide: \"/\" -> expression -> expression , modulo: \"%\" -> expression -> expression , equal: \"eq?\" -> expression -> expression ]" parseOperatorConfig of
+parseConfigTest = case parse "parameters{prefix: \"(\", suffix: \")\"}: name -> \"->\"" parseParametersConfig of
     Left err -> putStrLn $ show err
-    Right pa -> case extractValidParser "(+ 1 2)" pa of
+    Right pa -> case parse "(name->nome->nume)" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
