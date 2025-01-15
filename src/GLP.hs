@@ -3,10 +3,13 @@ module GLP where
 import MyParser
 import Structures
 import LispParser
+import Files
 
 import Control.Applicative
 import Data.Functor
 import Data.Char
+
+import Debug.Trace
 
 type Formatter = (String, String)
 
@@ -37,7 +40,7 @@ useOps [] = fail "empty list..."
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig (ParserConfig pbool pvar pops pif) = parseInteger <|> pbool <|> pvar <|> (useOps pops) <|> pif
-parseExpressionConfig _ = fail "failed to parse expression"
+-- parseExpressionConfig _ = fail "failed to parse expression"
 
 parseFormatters :: Parser Formatter
 parseFormatters = do
@@ -315,17 +318,21 @@ parseSyntaxConfiguration tab | length tab == 8 = case parse (tab !! 0) parseBool
                         Right code -> case parse (tab !! 6) (parseIfConfig cond code) of
                             Right ifConf -> case parse (tab !! 7) (parseFunctionConfig param code) of
                                 Right func -> Just $ ParserConfig bool var op ifConf
-                                Left _ -> Nothing
-                            Left _ -> Nothing
-                        Left _ -> Nothing
-                    Left _ -> Nothing
-                Left _ -> Nothing
-            Left _ -> Nothing
-        Left _ -> Nothing
-    Left _ -> Nothing
+                                Left _ -> trace ("fail function") Nothing
+                            Left _ -> trace ("fail if") Nothing
+                        Left _ -> trace ("fail code") Nothing
+                    Left _ -> trace ("fail param") Nothing
+                Left _ -> trace ("fail cond") Nothing
+            Left _ -> trace ("fail op") Nothing
+        Left _ -> trace ("fail op") Nothing
+    Left _ -> trace ("fail var") Nothing
+                            | otherwise = Nothing
 
 getParserConfiguration :: String -> Maybe ParserConfig
 getParserConfiguration "" = Nothing
-getParserConfiguration str = case isInGoodExtension str of
-    False -> Nothing
-    True -> parseSyntaxConfiguration $ words str
+getParserConfiguration str = parseSyntaxConfiguration $ lines str
+
+testParserConfiguration :: String -> IO Int
+testParserConfiguration content = case getParserConfiguration content of
+    Just _ -> pure 0
+    Nothing -> pure (length (lines content))

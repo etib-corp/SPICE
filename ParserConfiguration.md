@@ -75,9 +75,8 @@ Please do not define another syntax than the following given:
     - Here you have to define the separator, so just only the `string`.
     - **Warning:** The first character of the `string` must not be a digit or a letter.
     - *Example:* `parameters: name -> " toto "`.
-- `codeBlock`: Define code block's syntax, as condition, it is very strict here, so you only have to modify the [formatters](#formatters).
-Please do not define another syntax than the following given:
-    - *Example:* `codeBlock{your_formatters}: many(expression)`
+- `codeBlock`: Define code block's syntax, as condition, it is very strict here, so you only have to modify the [formatters](#formatters) and define the separators.
+    - *Example:* `codeBlock{your_formatters}: ["\n", "\t"]`.
 - `if`: Define an if statement. Here is another format too, an if key contains `2 list of strings`:
 the first one define the first statement ("if" for example) and the second one the last statement ("else" for example).
     - *Example:* `if: ["if", "imagine"] -> ["else", "back to reality"]`

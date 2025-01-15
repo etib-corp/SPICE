@@ -18,8 +18,6 @@ getFile ([x]) = secureGetContent x <|> error
   where
     error = exitWith (ExitFailure 84)
 
-
-
 parseFileLine :: String -> Env -> IO Env
 parseFileLine content e = case parse content parseExpression of
   Left err -> putStrLn ("Error: " ++ show err) >> return e
