@@ -10,7 +10,13 @@ import Data.Char
 
 type Formatter = (String, String)
 
-data ParserConfig = ParserConfig { parseBoolean' :: Parser Expr, parserOperator :: [Parser Expr] }
+data ParserConfig = ParserConfig {
+    parseBoolean' :: Parser Expr
+  , parseVariable :: Parser Expr
+  , parserOperator :: [Parser Expr] 
+  -- , parseIf :: Parser Expr
+  -- , parseFunction :: Parser Expr
+  }
 
 unquote :: String -> String
 unquote [] = ""
@@ -25,8 +31,13 @@ parsePrefixConfig = (parseGivenString "prefix:" *> parseWhiteSpaces *> parseStri
 parseSuffixConfig :: Parser String
 parseSuffixConfig = (parseGivenString "suffix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
 
-parseExpressionConfig :: Parser Expr
-parseExpressionConfig = parseInteger <|> parseBoolean
+useOps :: [Parser Expr] -> Parser Expr
+useOps (x:xs) = x <|> useOps xs
+useOps [] = fail "empty list..."
+
+parseExpressionConfig :: ParserConfig -> Parser Expr
+parseExpressionConfig (ParserConfig pbool pvar pops) = parseInteger <|> pbool <|> pvar <|> (useOps pops)
+parseExpressionConfig _ = fail "failed to parse expression"
 
 parseFormatters :: Parser Formatter
 parseFormatters = do
@@ -136,7 +147,7 @@ parseVariableConfig = do
 
 createCodeBlockParser :: Formatter -> [String] -> Parser [Expr]
 createCodeBlockParser (p,s) (sep:l) = parseGivenString p *>
-    (parseSepBy parseExpressionConfig (parseGivenString sep) <* parseGivenString s)
+    (parseSepBy parseExpression (parseGivenString sep) <* parseGivenString s) -- parseExpressionConfig eventually
     <|> createCodeBlockParser (p,s) l
 createCodeBlockParser _ _ = fail "Invalid code block"
 
@@ -245,14 +256,46 @@ getBooleanParserTest = case parse "boolean{prefix: \"(\", suffix: \")\"}: [\"#t\
     Right p -> p
 
 getOperatorsParserTest :: [Parser Expr]
-getOperatorsParserTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression, minus:\"-\" -> expression -> expression, multiply: \"*\" -> expression -> expression, div: \"/\" -> expression -> expression]" parseOperatorConfig of
+getOperatorsParserTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression, minus:\"-\" -> expression -> expression, multiply: \"*\" -> expression -> expression, divide: \"/\" -> expression -> expression]" parseOperatorConfig of
     Left err -> fail "error with operators"
     Right p -> p
 
-testConfig :: IO()
-testConfig = do
-    let boolean = getBooleanParserTest
-    let operators = getOperatorsParserTest
-    case parse "(#t)" boolean of
-        Left err -> putStrLn "error while parsing"
+getVariableParserTest :: Parser Expr
+getVariableParserTest = case parse "variable{prefix: \"(\", suffix: \")\"}: [\"define\"] -> name" parseVariableConfig of
+    Left _ -> fail "error with variable"
+    Right p -> p
+
+getConditionParserTest :: Parser Expr
+getConditionParserTest = case parse "condition{prefix: \"(\", suffix: \")\"}: expression" parseConditionConfig of
+    Left _ -> fail "error with condition"
+    Right p -> p
+
+getParameterParserTest :: Parser Expr
+getParameterParserTest = case parse "parameters{prefix: \"(\", suffix: \")\"}: name -> \" \"" parseConditionConfig of
+    Left _ -> fail "error with parameters"
+    Right p -> p
+
+getCodeBlockParserTest :: Parser [Expr]
+getCodeBlockParserTest = case parse "codeBlock{prefix: \"(\", suffix: \")\"}: many(expression)" parseCodeBlockConfig of
+    Left _ -> fail "error with code block"
+    Right p -> p
+
+-- getIfParserTest :: Parser Expr -> Parser Expr -> Parser Expr
+-- getIfParserTest pa pb = case parse "if{prefix: \"(\", suffix: \")\"}: [\"if\"] -> [\"\"]" (parseIfconfig pa pb) of
+--     Left _ -> fail "error with if"
+--     Right p -> p
+--
+-- getFunctionParserTest :: Parser [String] -> Parser Expr -> Parser Expr
+-- getFunctionParserTest ps pa = case parse "function{prefix: \"(\", suffix: \")\"}: [\"define\"] -> name -> parameters -> codeBlock" (parseFunctionConfig ps pa) of
+--     Left _ -> fail "error with function"
+--     Right p -> p
+    
+
+testConfig ::String -> IO()
+testConfig s = do
+    let codeblock = getCodeBlockParserTest
+    let parameters = getParameterParserTest
+    let config = (ParserConfig getBooleanParserTest getVariableParserTest getOperatorsParserTest)
+    case parse s (parseExpressionConfig config) of
+        Left err -> putStrLn $ show err
         Right result -> print result
