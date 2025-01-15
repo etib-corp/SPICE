@@ -206,7 +206,7 @@ createFunctionParser tab _ _ _ = case length tab > 4 of
 
 parseFunctionConfig :: Parser [String] -> Parser Expr -> Parser (Parser Expr)
 parseFunctionConfig p c = do
-    formatters <- parseGivenString "function" *> parseFormatters <* parseWhiteSpaces
+    formatters <- parseGivenString "function" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":" <* parseWhiteSpaces
     content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
     pure $ createFunctionParser content formatters p c
 
@@ -228,7 +228,7 @@ createIfParser tab _ _ _ = case length tab > 2 of
 
 parseIfconfig :: Parser Expr -> Parser Expr -> Parser (Parser Expr)
 parseIfconfig cond cod = do
-    formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":"
+    formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":" <* parseWhiteSpaces
     content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
     pure $ createIfParser content formatters cond cod
 
