@@ -52,26 +52,26 @@ parseBooleanConfig = do
 createOperatorParser :: [String] -> Formatter -> Parser Expr
 createOperatorParser (op:"expression":"expression":[]) (p,s) =
     ArithmeticOp <$>
-    (parseGivenString p *> parseGivenString (unquote op))
+    (parseGivenString p *> parseGivenString op)
     <*> (parseWhiteSpaces *> parseExpression)
     <*> (parseWhiteSpaces *> parseExpression)
     <* parseGivenString s
 createOperatorParser ("expression":op:"expression":[]) (p,s) = do
     leftExpr <- parseGivenString p *> parseExpression
-    name <- parseWhiteSpaces *> parseGivenString (unquote op)
+    name <- parseWhiteSpaces *> parseGivenString op
     rightExpr <- parseWhiteSpaces *> parseExpression <* parseGivenString s
     return $ ArithmeticOp name leftExpr rightExpr
 createOperatorParser ("expression":"expression":op:[]) (p,s) = do
     leftExpr <- parseGivenString p *> parseExpression
     rightExpr <- parseWhiteSpaces *> parseExpression
-    name <- parseWhiteSpaces *> parseGivenString (unquote op) <* parseGivenString s
+    name <- parseWhiteSpaces *> parseGivenString op <* parseGivenString s
     return $ ArithmeticOp name leftExpr rightExpr
-createOperatorParser _ _ = fail "Invalid Operator configuration: expected 3 elements defined (operator, right expression, left expression)."
+createOperatorParser t _ =  if (length t) >= 3 then fail ">3" else fail "<3"
 
 parseOperatorConfig' :: Formatter -> Parser (Parser Expr)
 parseOperatorConfig' f = do
-    (parseDeclarator) *> parseWhiteSpaces
-    operatorValue <- parseSepBy parseConfigString (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
+    parseWhiteSpaces *> parseDeclarator <* parseWhiteSpaces
+    operatorValue <- parseSepBy (parseString' <|> parseStringInQuotes) (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
     pure $ createOperatorParser operatorValue f
         where
             parseDeclarator = parseGivenString "plus:" <|> parseGivenString "minus:" <|> parseGivenString "multiply:" <|> parseGivenString "divide:" <|> parseGivenString "modulo:" <|> parseGivenString "equal:" <|> parseGivenString "assignation:"
@@ -80,7 +80,7 @@ parseOperatorConfig :: Parser [Parser Expr]
 parseOperatorConfig = do
     parseGivenString "operators"
     formatters <- parseFormatters
-    parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
+    parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseGivenString ",") <* parseGivenString "]"
 
 extractValidParser :: String -> [Parser a] -> Either Error a
 extractValidParser str [x] = case parse str x of
@@ -238,3 +238,21 @@ parseConfigTest = case parse "variable{prefix: \"(\", suffix: \")\"}: name -> [\
     Right pa -> case parse "(a define)" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
+
+getBooleanParserTest :: Parser Expr
+getBooleanParserTest = case parse "boolean{prefix: \"(\", suffix: \")\"}: [\"#t\", \"#f\"]" parseBooleanConfig of
+    Left err -> fail "Error boolean"
+    Right p -> p
+
+getOperatorsParserTest :: [Parser Expr]
+getOperatorsParserTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression, minus:\"-\" -> expression -> expression, multiply: \"*\" -> expression -> expression, div: \"/\" -> expression -> expression]" parseOperatorConfig of
+    Left err -> fail "error with operators"
+    Right p -> p
+
+testConfig :: IO()
+testConfig = do
+    let boolean = getBooleanParserTest
+    let operators = getOperatorsParserTest
+    case parse "(#t)" boolean of
+        Left err -> putStrLn "error while parsing"
+        Right result -> print result
