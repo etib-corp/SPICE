@@ -167,35 +167,11 @@ createFunctionParser' ("declarator":"name":"parameters":"codeBlock":[]) declarat
     parameters <- par <* parseWhiteSpaces
     codeBlock <- cod <* parseWhiteSpaces
     pure $ Function name parameters codeBlock
-createFunctionParser' ("declarator":"name":"codeBlock":"parameters":[]) declarators (p,s) par cod = do
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
 createFunctionParser' ("declarator":"parameters":"name":"codeBlock":[]) declarators (p,s) par cod = do
     declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
     parameters <- par <* parseWhiteSpaces
     name <- parseName <* parseWhiteSpaces
     codeBlock <- cod <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("declarator":"parameters":"codeBlock":"name":[]) declarators (p,s) par cod = do
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("declarator":"codeBlock":"parameters":"name":[]) declarators (p,s) par cod = do
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("declarator":"codeBlock":"name":"parameters":[]) declarators (p,s) par cod = do
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
     pure $ Function name parameters codeBlock
 createFunctionParser' ("name":"declarator":"parameters":"codeBlock":[]) declarators (p,s) par cod = do
     name <- parseName <* parseWhiteSpaces
@@ -203,107 +179,11 @@ createFunctionParser' ("name":"declarator":"parameters":"codeBlock":[]) declarat
     parameters <- par <* parseWhiteSpaces
     codeBlock <- cod <* parseWhiteSpaces
     pure $ Function name parameters codeBlock
-createFunctionParser' ("name":"declarator":"codeBlock":"parameters":[]) declarators (p,s) par cod = do
-    name <- parseName <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
 createFunctionParser' ("name":"parameters":"declarator":"codeBlock":[]) declarators (p,s) par cod = do
     name <- parseName <* parseWhiteSpaces
     parameters <- par <* parseWhiteSpaces
     declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
     codeBlock <- cod <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("name":"parameters":"codeBlock":"declarator":[]) declarators (p,s) par cod = do
-    name <- parseName <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("name":"codeBlock":"parameters":"declarator":[]) declarators (p,s) par cod = do
-    name <- parseName <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("name":"codeBlock":"declarator":"parameters":[]) declarators (p,s) par cod = do
-    name <- parseName <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("parameters":"name":"declarator":"codeBlock":[]) declarators (p,s) par cod = do
-    parameters <- par <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("parameters":"name":"codeBlock":"declarator":[]) declarators (p,s) par cod = do
-    parameters <- par <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("parameters":"declarator":"name":"codeBlock":[]) declarators (p,s) par cod = do
-    parameters <- par <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("parameters":"declarator":"codeBlock":"name":[]) declarators (p,s) par cod = do
-    parameters <- par <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("parameters":"codeBlock":"name":"declarator":[]) declarators (p,s) par cod = do
-    parameters <- par <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("parameters":"codeBlock":"declarator":"name":[]) declarators (p,s) par cod = do
-    parameters <- par <* parseWhiteSpaces
-    codeBlock <- cod <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("codeBlock":"parameters":"name":"declarator":[]) declarators (p,s) par cod = do
-    codeBlock <- cod <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("codeBlock":"parameters":"declarator":"name":[]) declarators (p,s) par cod = do
-    codeBlock <- cod <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("codeBlock":"declarator":"parameters":"name":[]) declarators (p,s) par cod = do
-    codeBlock <- cod <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("codeBlock":"declarator":"name":"parameters":[]) declarators (p,s) par cod = do
-    codeBlock <- cod <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("codeBlock":"name":"parameters":"declarator":[]) declarators (p,s) par cod = do
-    codeBlock <- cod <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    pure $ Function name parameters codeBlock
-createFunctionParser' ("codeBlock":"name":"declarator":"parameters":[]) declarators (p,s) par cod = do
-    codeBlock <- cod <* parseWhiteSpaces
-    name <- parseName <* parseWhiteSpaces
-    declarator <- parseGivenString p *> loopedParser declarators <* parseWhiteSpaces
-    parameters <- par <* parseWhiteSpaces
     pure $ Function name parameters codeBlock
 createFunctionParser' _ _ _ _ _ = fail "Invalid `function` configuration."
 
