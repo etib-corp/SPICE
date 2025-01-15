@@ -14,7 +14,7 @@ data ParserConfig = ParserConfig {
     parseBoolean' :: Parser Expr
   , parseVariable :: Parser Expr
   , parserOperator :: [Parser Expr] 
-  -- , parseIf :: Parser Expr
+  , parseIf :: Parser Expr
   -- , parseFunction :: Parser Expr
   }
 
@@ -36,7 +36,7 @@ useOps (x:xs) = x <|> useOps xs
 useOps [] = fail "empty list..."
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
-parseExpressionConfig (ParserConfig pbool pvar pops) = parseInteger <|> pbool <|> pvar <|> (useOps pops)
+parseExpressionConfig (ParserConfig pbool pvar pops pif) = parseInteger <|> pbool <|> pvar <|> (useOps pops) <|> pif
 parseExpressionConfig _ = fail "failed to parse expression"
 
 parseFormatters :: Parser Formatter
@@ -145,13 +145,13 @@ parseVariableConfig = do
     second <- (parseConfigString <|> many (satisfy (isPrint)))
     pure $ createVariableConfig [first,second] formatters
 
-createCodeBlockParser :: Formatter -> [String] -> Parser [Expr]
-createCodeBlockParser (p,s) (sep:l) = parseGivenString p *>
-    (parseSepBy parseExpression (parseGivenString sep) <* parseGivenString s) -- parseExpressionConfig eventually
-    <|> createCodeBlockParser (p,s) l
+createCodeBlockParser :: Formatter -> [String] -> Parser Expr
+createCodeBlockParser (p,s) (sep:l) = List <$> ((parseGivenString p) *>
+    parseSepBy parseExpression (parseGivenString sep)
+    <* parseGivenString s) <|> createCodeBlockParser (p,s) l -- parseExpressionConfig eventually
 createCodeBlockParser _ _ = fail "Invalid code block"
 
-parseCodeBlockConfig :: Parser (Parser [Expr])
+parseCodeBlockConfig :: Parser (Parser Expr)
 parseCodeBlockConfig = do
     parseGivenString "codeBlock"
     formatters <- parseFormatters
@@ -164,7 +164,7 @@ parseCodeBlockConfig = do
 parseTestCodeBlock :: IO ()
 parseTestCodeBlock = case parse "codeBlock{prefix: \"{\", suffix: \"}\"} : [\".\", \"\n\", \";\"] -> many(expression)" parseCodeBlockConfig of
     Left err -> putStrLn $ show err
-    Right pa -> case parse "{#t\n1}" pa of
+    Right pa -> case parse "{#t;1}" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
 
@@ -275,27 +275,27 @@ getParameterParserTest = case parse "parameters{prefix: \"(\", suffix: \")\"}: n
     Left _ -> fail "error with parameters"
     Right p -> p
 
-getCodeBlockParserTest :: Parser [Expr]
+getCodeBlockParserTest :: Parser Expr
 getCodeBlockParserTest = case parse "codeBlock{prefix: \"(\", suffix: \")\"}: many(expression)" parseCodeBlockConfig of
     Left _ -> fail "error with code block"
     Right p -> p
 
--- getIfParserTest :: Parser Expr -> Parser Expr -> Parser Expr
--- getIfParserTest pa pb = case parse "if{prefix: \"(\", suffix: \")\"}: [\"if\"] -> [\"\"]" (parseIfconfig pa pb) of
---     Left _ -> fail "error with if"
---     Right p -> p
---
--- getFunctionParserTest :: Parser [String] -> Parser Expr -> Parser Expr
--- getFunctionParserTest ps pa = case parse "function{prefix: \"(\", suffix: \")\"}: [\"define\"] -> name -> parameters -> codeBlock" (parseFunctionConfig ps pa) of
---     Left _ -> fail "error with function"
---     Right p -> p
+getIfParserTest :: Parser Expr -> Parser Expr -> Parser Expr
+getIfParserTest pa pb = case parse "if{prefix: \"(\", suffix: \")\"}: [\"if\"] -> [\"\"]" (parseIfconfig pa pb) of
+    Left _ -> fail "error with if"
+    Right p -> p
+
+getFunctionParserTest :: Parser [String] -> Parser Expr -> Parser Expr
+getFunctionParserTest ps pa = case parse "function{prefix: \"(\", suffix: \")\"}: [\"define\"] -> name -> parameters -> codeBlock" (parseFunctionConfig ps pa) of
+    Left _ -> fail "error with function"
+    Right p -> p
     
 
 testConfig ::String -> IO()
 testConfig s = do
     let codeblock = getCodeBlockParserTest
     let parameters = getParameterParserTest
-    let config = (ParserConfig getBooleanParserTest getVariableParserTest getOperatorsParserTest)
+    let config = (ParserConfig getBooleanParserTest getVariableParserTest getOperatorsParserTest (getIfParserTest parameters codeblock))
     case parse s (parseExpressionConfig config) of
         Left err -> putStrLn $ show err
         Right result -> print result
