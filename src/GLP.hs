@@ -10,7 +10,7 @@ import Data.Char
 
 type Formatter = (String, String)
 
-data ParserConfig = ParserConfig { parseBoolean' :: Parser Expr, parserOperator :: [Parser Expr] }
+data ParserConfig = ParserConfig { parseBoolean' :: Parser Expr, parseVariable :: Parser Expr, parserOperator :: [Parser Expr] }
 
 unquote :: String -> String
 unquote [] = ""
@@ -226,8 +226,8 @@ createIfParser tab _ _ _ = case length tab > 2 of
     True -> fail "Invalid `if` configuration: too many elements which are defining a if syntax."
     False -> fail "Invalid `if` configuration: not enough elements which are defining a if syntax."
 
-parseIfconfig :: Parser Expr -> Parser Expr -> Parser (Parser Expr)
-parseIfconfig cond cod = do
+parseIfConfig :: Parser Expr -> Parser Expr -> Parser (Parser Expr)
+parseIfConfig cond cod = do
     formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":" <* parseWhiteSpaces
     content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
     pure $ createIfParser content formatters cond cod
@@ -256,3 +256,34 @@ testConfig = do
     case parse "(#t)" boolean of
         Left err -> putStrLn "error while parsing"
         Right result -> print result
+
+isInGoodExtension :: String -> Bool
+isInGoodExtension "" = False
+isInGoodExtension str = case length str == 6 of
+    True -> str == ".spice"
+    False -> isInGoodExtension $ tail str
+
+parseSyntaxConfiguration :: [String] -> Maybe ParserConfig
+parseSyntaxConfiguration tab | length tab == 8 = case parse (tab !! 0) parseBooleanConfig of
+    Right bool -> case parse (tab !! 1) parseVariableConfig of
+        Right var -> case parse (tab !! 2) parseOperatorConfig of
+            Right op -> case parse (tab !! 3) parseConditionConfig of
+                Right cond -> case parse (tab !! 4) parseParametersConfig of
+                    Right param -> case parse (tab !! 5) parseCodeBlockConfig of
+                        Right code -> case parse (tab !! 6) (parseIfConfig cond code) of
+                            Right ifConf -> case parse (tab !! 7) (parseFunctionConfig param code) of
+                                Right func -> Just $ ParserConfig bool var op
+                                Left _ -> Nothing
+                            Left _ -> Nothing
+                        Left _ -> Nothing
+                    Left _ -> Nothing
+                Left _ -> Nothing
+            Left _ -> Nothing
+        Left _ -> Nothing
+    Left _ -> Nothing
+
+getParserConfiguration :: String -> Maybe ParserConfig
+getParserConfiguration "" = Nothing
+getParserConfiguration str = case isInGoodExtension str of
+    False -> Nothing
+    True -> parseSyntaxConfiguration $ words str

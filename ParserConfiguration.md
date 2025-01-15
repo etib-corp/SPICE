@@ -5,6 +5,8 @@
 With SPICE you can create your own language. This is done by creating a parser configuration file.
 This configuration file respects our own syntax and is used to define the syntax of your language.
 
+Configuration file must be in `.spice` format.
+
 ## Syntax
 
 ### Links between expressions
@@ -117,15 +119,7 @@ Here you can find some syntax configuration examples:
     ```
     boolean: ["true", "false"]
     variable{suffix: ";"}: ["let", "const", "var"] -> name
-    operators{suffix: ";"}: [
-        plus: expression -> "+" -> expression,
-        minus: expression -> "-" -> expression,
-        multiply: expression -> "*" -> expression,
-        divide: expression -> "/" -> expression,
-        modulo: expression -> "%" -> expression,
-        equal: expression -> ["=="] -> expression,
-        assignation: name -> "=" -> expression,
-    ],
+    operators{suffix: ";"}: [plus: expression -> "+" -> expression, minus: expression -> "-" -> expression, multiply: expression -> "*" -> expression, divide: expression -> "/" -> expression, modulo: expression -> "%" -> expression, equal: expression -> ["=="] -> expression, assignation: name -> "=" -> expression]
     condition{prefix: "(", suffix: ")"}: expression
     parameters{prefix: "(", suffix: ")"}: name -> ","
     codeBlock{prefix: "{", suffix: "}"}: many(expression)
@@ -136,15 +130,7 @@ Here you can find some syntax configuration examples:
     ```
     boolean{prefix: "(", suffix: ")"}: ["#t", "#f"]
     variable{prefix: "(", suffix: ")"}: ["define"] -> name
-    operators{prefix: "(", suffix: ")"}: [
-        plus: "+" -> expression -> expression,
-        minus: "-" -> expression -> expression,
-        multiply: "*" -> expression -> expression,
-        divide: "/" -> expression -> expression,
-        modulo: "%" -> expression -> expression,
-        equal: "eq?" -> expression -> expression,
-        assignation: name -> "=" -> expression,
-    ]
+    operators{prefix: "(", suffix: ")"}: [plus: "+" -> expression -> expression, minus: "-" -> expression -> expression, multiply: "*" -> expression -> expression, divide: "/" -> expression -> expression, modulo: "%" -> expression -> expression, equal: "eq?" -> expression -> expression, assignation: name -> "=" -> expression]
     condition{prefix: "(", suffix: ")"}: expression
     parameters{prefix: "(", suffix: ")"}: name -> " "
     codeBlock{prefix: "(", suffix: ")"}: many(expression)
