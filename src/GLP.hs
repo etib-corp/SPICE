@@ -210,6 +210,28 @@ parseFunctionConfig p c = do
     content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
     pure $ createFunctionParser content formatters p c
 
+createIfParser :: [String] -> Formatter -> Parser Expr -> Parser Expr -> Parser Expr
+createIfParser (('[':xs):('[':ys):[]) (p,s) cond cod = case parseTable' xs of
+    Left errP -> fail "Invalid code prefix for `if` configuration."
+    Right pref -> case parseTable' ys of
+        Left errS -> fail "Invalid code suffix for `if` configuration."
+        Right suf -> do
+            parseGivenString p *> parseWhiteSpaces *> loopedParser pref
+            condition <- cond <* parseWhiteSpaces
+            fstBlock <- cod <* parseWhiteSpaces
+            parseWhiteSpaces *> loopedParser suf *> parseWhiteSpaces
+            sndBlock <- cod <* parseWhiteSpaces <* parseGivenString s
+            pure $ If condition fstBlock sndBlock
+createIfParser tab _ _ _ = case length tab > 2 of
+    True -> fail "Invalid `if` configuration: too many elements which are defining a if syntax."
+    False -> fail "Invalid `if` configuration: not enough elements which are defining a if syntax."
+
+parseIfconfig :: Parser Expr -> Parser Expr -> Parser (Parser Expr)
+parseIfconfig cond cod = do
+    formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":"
+    content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
+    pure $ createIfParser content formatters cond cod
+
 parseConfigTest :: IO ()
 parseConfigTest = case parse "variable{prefix: \"(\", suffix: \")\"}: name -> [\"define\"]" parseVariableConfig of
     Left err -> putStrLn $ show err
