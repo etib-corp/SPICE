@@ -19,7 +19,7 @@ data ParserConfig = ParserConfig {
   , parserOperator :: [Parser Expr]
   , parseIf :: Parser Expr
 --   , parseFunction :: Parser Expr
-  }
+  } | NullConfig
 
 unquote :: String -> String
 unquote [] = ""
@@ -332,7 +332,10 @@ getParserConfiguration :: String -> Maybe ParserConfig
 getParserConfiguration "" = Nothing
 getParserConfiguration str = parseSyntaxConfiguration $ lines str
 
-testParserConfiguration :: String -> IO Int
+testParserConfiguration :: String -> IO ParserConfig
 testParserConfiguration content = case getParserConfiguration content of
-    Just _ -> pure 0
-    Nothing -> pure (length (lines content))
+    Just config -> pure config
+    Nothing -> pure NullConfig
+
+loadParserConfiguration :: String -> IO ParserConfig
+loadParserConfiguration path = secureGetContent path >>= testParserConfiguration
