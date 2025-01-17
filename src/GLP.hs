@@ -173,8 +173,11 @@ parseTestCodeBlock = case parse "codeBlock{prefix: \"{\", suffix: \"}\"} : [\".\
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
 
+parseTable :: Parser String
+parseTable = parseGivenString "[" *> parseSomeUntil (parseAnyChar) (parseChar ']')
+
 parseTable' :: String -> Either Error [String]
-parseTable' tab = parse tab (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces)
+parseTable' tab = parse tab (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseWhiteSpaces)
 
 createFunctionParser' :: [String] -> [String] -> Formatter -> Parser [String] -> Parser Expr -> Parser Expr
 createFunctionParser' ("declarator":"name":"parameters":"codeBlock":[]) declarators (p,s) par cod = do
@@ -227,9 +230,9 @@ parseFunctionConfig p c = do
     pure $ createFunctionParser content formatters p c
 
 createIfParser :: [String] -> Formatter -> Parser Expr -> Parser Expr -> Parser Expr
-createIfParser (('[':xs):('[':ys):[]) (p,s) cond cod = case parseTable' xs of
+createIfParser (first:second:[]) (p,s) cond cod = case parseTable' first of
     Left errP -> fail "Invalid code prefix for `if` configuration."
-    Right pref -> case parseTable' ys of
+    Right pref -> case parseTable' second of
         Left errS -> fail "Invalid code suffix for `if` configuration."
         Right suf -> do
             parseGivenString p *> parseWhiteSpaces *> loopedParser pref
@@ -240,13 +243,15 @@ createIfParser (('[':xs):('[':ys):[]) (p,s) cond cod = case parseTable' xs of
             pure $ If condition fstBlock sndBlock
 createIfParser tab _ _ _ = case length tab > 2 of
     True -> fail "Invalid `if` configuration: too many elements which are defining a if syntax."
-    False -> fail "Invalid `if` configuration: not enough elements which are defining a if syntax."
+    False -> fail ("Invalid `if` configuration: not enough elements which are defining a if syntax.")
 
 parseIfConfig :: Parser Expr -> Parser Expr -> Parser (Parser Expr)
 parseIfConfig cond cod = do
     formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":" <* parseWhiteSpaces
-    content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
-    pure $ createIfParser content formatters cond cod
+    first <- parseTable
+    parseWhiteSpaces *> parseGivenString "->" *> parseWhiteSpaces
+    second <- parseTable
+    pure $ createIfParser [first,second] formatters cond cod
 
 parseConfigTest :: IO ()
 parseConfigTest = case parse "variable{prefix: \"(\", suffix: \")\"}: name -> [\"define\"]" parseVariableConfig of
@@ -348,8 +353,12 @@ loadParserConfiguration :: String -> IO ParserConfig
 loadParserConfiguration path = secureGetContent path >>= testParserConfiguration
 
 testVariableConfig :: IO String
-testVariableConfig = case parse "variable{suffix: \";\"}: [\"let\", \"const\", \"var\"] -> name" parseVariableConfig of
-    Left (Error err _) -> pure err
-    Right pa -> case parse "let hello;" pa of
-        Left (Error err2 _) -> pure err2
-        Right value -> pure $ show value
+testVariableConfig = case parse "condition{prefix: \"(\", suffix: \")\"}: expression" parseConditionConfig of
+    Left (Error errC _) -> pure errC
+    Right cond -> case parse "codeBlock{prefix: \"(\", suffix: \")\"}: [\";\"]" parseCodeBlockConfig of
+        Left (Error errB _) -> pure errB
+        Right block -> case parse "if{prefix: \"(\", suffix: \")\"}: [\"if\"] -> [\"\"]" (parseIfConfig cond block) of
+            Left (Error errI _) -> pure errI
+            Right ifConf -> case parse "(if (eq? a b) (lola) (lolb))" ifConf  of
+                Left (Error errR _) -> pure errR
+                Right result -> pure "ok"
