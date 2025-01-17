@@ -43,15 +43,23 @@ parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig (ParserConfig pbool pvar pops pif) = parseInteger <|> pbool <|> pvar <|> (useOps pops) <|> pif
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 -- parseExpressionConfig _ = fail "failed to parse expression"
+--
 
-parseFormatters :: Parser Formatter
-parseFormatters = do
+parseEmptyFormatter :: Parser Formatter
+parseEmptyFormatter = parseGivenString ":" $> ("","")
+
+
+parseFullFormatters :: Parser Formatter
+parseFullFormatters = do
     parseGivenString "{" *> parseWhiteSpaces
     prefix <- parsePrefixConfig
     ((parseWhiteSpaces *> parseGivenString ",") <|> parseGivenString "") *> parseWhiteSpaces
     suffix <- parseSuffixConfig
     parseGivenString "}"
     pure $ (prefix, suffix)
+
+parseFormatters :: Parser Formatter
+parseFormatters = parseFullFormatters <|> parseEmptyFormatter
 
 createBooleanParser :: [String] -> Formatter -> Parser Expr
 createBooleanParser (x:y:[]) (p,s) = fmap Integer (parseGivenString p *> (parseGivenString x $> 1 <|> parseGivenString y $> 0) <* parseGivenString s)
@@ -287,6 +295,11 @@ getFunctionParserTest ps pa = case parse "function{prefix: \"(\", suffix: \")\"}
     Left _ -> fail "error with function"
     Right p -> p
 
+parseWithConfig :: String -> ParserConfig -> IO()
+parseWithConfig s pc = case parse s (parseExpressionConfig pc) of
+      Left err -> putStrLn $ show err
+      Right result -> print result
+
 testConfig ::String -> IO()
 testConfig s = do
     let codeblock = getCodeBlockParserTest
@@ -318,8 +331,8 @@ parseSyntaxConfiguration tab | length tab == 8 = case parse (tab !! 0) parseBool
                     Left _ -> trace ("fail param") Nothing
                 Left _ -> trace ("fail cond") Nothing
             Left _ -> trace ("fail op") Nothing
-        Left _ -> trace ("fail op") Nothing
-    Left _ -> trace ("fail var") Nothing
+        Left _ -> trace ("fail var") Nothing
+    Left _ -> trace ("fail bool") Nothing
                             | otherwise = Nothing
 
 getParserConfiguration :: String -> Maybe ParserConfig

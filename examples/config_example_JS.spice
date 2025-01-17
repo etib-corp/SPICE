@@ -1,5 +1,5 @@
-boolean: ["true", "false"]
-variable{suffix: ";"}: ["let", "const", "var"]
+boolean{prefix:"(", suffix:")"}: ["true", "false"]
+variable{prefix:"-", suffix: ";"}: ["let", "const", "var"]
 operators{suffix: ";"}: [plus: expression -> "+" -> expression, minus: expression -> "-" -> expression, multiply: expression -> "*" -> expression, divide: expression -> "/" -> expression, modulo: expression -> "%" -> expression, equal: expression -> ["==", "==="] -> expression, assignation: name -> "=" -> expression]
 condition{prefix: "(", suffix: ")"}: expression
 parameters{prefix: "(", suffix: ")"}: name -> ","
