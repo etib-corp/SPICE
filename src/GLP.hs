@@ -4,6 +4,7 @@ import MyParser
 import Structures
 import LispParser
 import Files
+import Lib
 
 import Control.Applicative
 import Data.Functor
@@ -40,6 +41,7 @@ useOps [] = fail "empty list..."
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig (ParserConfig pbool pvar pops pif) = parseInteger <|> pbool <|> pvar <|> (useOps pops) <|> pif
+parseExpressionConfig NullConfig = fail "Invalid parser config."
 -- parseExpressionConfig _ = fail "failed to parse expression"
 
 parseFormatters :: Parser Formatter
@@ -127,15 +129,8 @@ loopedParser [] = fail "Can not parse any elements of given table."
 loopedParser (x:xs) = parseGivenString x <|> loopedParser xs
 
 createVariableConfig' :: [String] -> Parser Expr
-createVariableConfig' (('[':ys):"name":[]) = case parse ys (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces) of
-    Left err -> fail "Invalid `variable` configuration, certainly there is a missing ']'"
-    Right result -> fmap Var (loopedParser result *> parseWhiteSpaces *> (parseName <|> fail "Invalid variable name."))
-createVariableConfig' ("name":('[':ys):[]) = case parse ys (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces) of
-    Left err -> fail "Invalid `variable` configuration, certainly there is a missing ']'"
-    Right result -> fmap Var ((parseName <* parseWhiteSpaces <* loopedParser result) <|> fail "Invalid variable name.")
-createVariableConfig' tab = case length tab of
-    1 -> fail ("Invalid `variable` configuration, not enough elements which are defining a variable syntax. " ++ show tab)
-    _ -> fail ("Invalid `variable` configuration, too many elements which are defining a variable syntax. " ++ show tab)
+createVariableConfig' [] = fail "Invalid `variable` configuration."
+createVariableConfig' tab = fmap Var (loopedParser tab *> parseWhiteSpaces *> parseName)
 
 createVariableConfig :: [String] -> Formatter -> Parser Expr
 createVariableConfig [] _ = fail "Invalid `variable` configuration."
@@ -144,9 +139,8 @@ createVariableConfig content (p,s) = parseGivenString p *> createVariableConfig'
 parseVariableConfig :: Parser (Parser Expr)
 parseVariableConfig = do
     formatters <- parseGivenString "variable" *> parseFormatters <* parseGivenString ":" <* parseWhiteSpaces
-    first <- parseManyUntil parseAnyChar (parseChar ' ') <* parseWhiteSpaces <* parseGivenString "->" <* parseWhiteSpaces
-    second <- (parseConfigString <|> many (satisfy (isPrint)))
-    pure $ createVariableConfig [first,second] formatters
+    table <- parseGivenString "[" *> parseSepBy (parseStringInQuotes) (parseWhiteSpaces *> parseGivenString "," <* parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces
+    pure $ createVariableConfig table formatters
 
 createCodeBlockParser :: Formatter -> [String] -> Parser Expr
 createCodeBlockParser (p,s) (sep:l) = List <$> ((parseGivenString p) *>
@@ -339,3 +333,10 @@ testParserConfiguration content = case getParserConfiguration content of
 
 loadParserConfiguration :: String -> IO ParserConfig
 loadParserConfiguration path = secureGetContent path >>= testParserConfiguration
+
+testVariableConfig :: IO String
+testVariableConfig = case parse "variable{suffix: \";\"}: [\"let\", \"const\", \"var\"] -> name" parseVariableConfig of
+    Left (Error err _) -> pure err
+    Right pa -> case parse "let hello;" pa of
+        Left (Error err2 _) -> pure err2
+        Right value -> pure $ show value

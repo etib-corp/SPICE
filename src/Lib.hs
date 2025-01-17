@@ -34,7 +34,7 @@ isWhiteSpace '\n' = True
 isWhiteSpace '\t' = True
 isWhiteSpace _ = False
 
-wLast :: String -> String
+wLast :: [a] -> [a]
 wLast [] = []
 wLast [x] = []
 wLast (x:xs) = x : wLast xs

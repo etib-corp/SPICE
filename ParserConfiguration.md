@@ -50,8 +50,8 @@ Here are the key and values that you **have to** define:
 It must be define as a `list of string` that can be parsed, this list must contain 2 values.
     - *Example:* `boolean: ["true", "false"]`.
 - `variable`: Define a variable, it is used to tell the parser *"Hey ! Here is how you have to parse a variable."*.
-It must be define as a `list of string` followed by a `name`, or a `name` followed by a `list of string`.
-    - *Example:* `variable: ["var", "let", "const"] -> name`.
+It must be define as a `list of string`.
+    - *Example:* `variable: ["var", "let", "const"]`.
 - `operators`: Define a list of operators, it is used to tell the parser *"Hey ! Here is how you have to parse operators."*.
 It must contain a list of key/values, where the key is the operator and the value is the precedence of the operator.
     - *Example:* `operators: [plus: expression -> "+" -> expression, minus: "-" -> expression -> expression, ...]`.
