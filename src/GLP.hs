@@ -29,8 +29,7 @@ parseExpressionConfig pcfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func) 
     <|> pbool
     <|> (functionParserConfig func pcfg)
     <|> parseInteger
-    -- <|> (parseCodeBlock cb pcfg)
-    <|> (parseVariabl pvar)
+    <|> (parseVariabl pvar pcfg)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
 
@@ -57,7 +56,7 @@ operatorParserConfig (f, t, d) _ = fail "Failed to parse operator"
 
 parseSingleOperatorConfig :: Formatter -> Parser (Formatter, [String], String)
 parseSingleOperatorConfig formatters = do
-    declarator <- loopedParser ["plus:", "minus:", "multiply:", "divide:", "modulo:", "equal:", "assignation:"] <* parseWhiteSpaces
+    declarator <- loopedParser ["plus:", "minus:", "multiply:", "divide:", "modulo:", "equal:", "assignation:", "greater:", "less:"] <* parseWhiteSpaces
     content <- parseSepBy (parseStringInQuotes <|> parseString') (parseWhiteSpaces *> parseGivenString "->" *> parseWhiteSpaces) <* parseWhiteSpaces
     pure $ (formatters, content, declarator)
 
@@ -77,8 +76,9 @@ useOps :: [(Formatter,[String], String)] -> ParserConfig -> Parser Expr
 useOps [] _ = fail "No operators found."
 useOps (x:xs) cfg = operatorParserConfig x cfg <|> useOps xs cfg
 
-parseVariabl :: (Formatter,[String]) -> Parser Expr
-parseVariabl ((p,s),_) =  Var <$> ((parseGivenString p) *> parseName <* (parseGivenString s))
+parseVariabl :: (Formatter,[String]) -> ParserConfig -> Parser Expr
+parseVariabl ((p,s),declarator) cfg@(ParserConfig _ _ pops _ _ _ _ _) = do
+    parseGivenString p *> loopedParser declarator *> parseWhiteSpaces *> (useOps pops cfg ) <* parseGivenString s
 
 parseCondition' :: Formatter -> ParserConfig -> Parser Expr
 parseCondition' (p,s) cfg = parseGivenString p *> (parseExpressionConfig cfg) <* parseGivenString s
