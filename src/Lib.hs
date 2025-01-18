@@ -8,6 +8,8 @@ module Lib
     , lastChar
     , catFile
     , getUntilBackspace
+    , getUntilChar
+    , mapFilterByIndex
     ) where
 
 import Data.Text (pack)
@@ -32,7 +34,7 @@ isWhiteSpace '\n' = True
 isWhiteSpace '\t' = True
 isWhiteSpace _ = False
 
-wLast :: String -> String
+wLast :: [a] -> [a]
 wLast [] = []
 wLast [x] = []
 wLast (x:xs) = x : wLast xs
@@ -46,7 +48,17 @@ catFile :: String -> IO ()
 catFile path = do
     (readFile path) >>= putStrLn
 
+getUntilChar :: String -> Char -> String
+getUntilChar [] _ = []
+getUntilChar (x:xs) c   | x == c = []
+                        | otherwise = x : getUntilChar xs c
+
 getUntilBackspace :: String -> String
 getUntilBackspace [] = []
 getUntilBackspace (x:xs)    | x == '\n' = []
                             | otherwise = x : getUntilBackspace xs
+
+mapFilterByIndex :: [(a, b)] -> (a -> Bool) -> (a, b)
+mapFilterByIndex (x:[]) _ = x
+mapFilterByIndex ((k,v):xs) func    | func k = (k,v)
+                                    | otherwise = mapFilterByIndex xs func

@@ -18,8 +18,6 @@ getFile ([x]) = secureGetContent x <|> error
   where
     error = exitWith (ExitFailure 84)
 
-
-
 parseFileLine :: String -> Env -> IO Env
 parseFileLine content e = case parse content parseExpression of
   Left err -> putStrLn ("Error: " ++ show err) >> return e
@@ -44,7 +42,7 @@ compiler str env = case parse str parseExpression of
   Right expr -> eval (createAst expr) env
 
 choseMode :: Options -> IO ()
-choseMode (Options v f) = case length f of
+choseMode (Options v c f) = case length f of
   0 -> performCLI defaultPrompt emptyEnv compiler
   _ -> getFile f >>= parseFile >> return ()
 

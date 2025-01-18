@@ -8,11 +8,10 @@ import Lib
 
 import Control.Applicative
 import Control.Monad
+
 import Data.Functor.Identity
 import Data.List
 import Data.Char
-import Debug.Trace
-import Structures
 
 -- | Represents an error in the parsing process, including a message and
 -- the position in the input where the error occurred.
@@ -116,6 +115,9 @@ parseNoneOf s = satisfy (\ c -> not $ elem c s)
 parseString :: Parser String
 parseString = parseSomeUntil parseAnyChar (satisfy isWhiteSpace)
 
+parseString' :: Parser String
+parseString' = some (satisfy isAlpha)
+
 -- | Parses while it can parse with a separator parser given as parameter.
 parseSepBy :: Parser a -> Parser b -> Parser [a]
 parseSepBy p1 p2 = (:) <$> p1 <*> (many (p2 *> p1))
@@ -162,5 +164,5 @@ parseDouble = check >>= \ s ->
     where
         check = (fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)) <|> fail "Invalid float."
 
-test :: Either Error Expr -> Expr
-test (Right expr) = expr
+parseStringInQuotes :: Parser String
+parseStringInQuotes = parseChar '"' *> parseManyUntil parseAnyChar (satisfy (== '"'))

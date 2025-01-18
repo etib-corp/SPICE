@@ -1,34 +1,44 @@
 module Structures where
 
+import MyParser
+
 import Control.Monad
 import Control.Applicative
 import Control.Monad
+
 import Data.List (nubBy)
 import Data.Fixed (mod')
 
-
 type Name = String
 
+type Formatter = (String, String)
+
 data Expr
-  = Integer Int                 -- Parsed
-  | Declarator Name             -- DONT
-  | Float Double                -- Parsed
-  | Var Name                    -- Parsed, need to be improved
-  | Operator Name               -- Parsed
-  | Call Name                   -- DONT
-  | Condition Name              -- DONT
-  | Callable Name [Expr]        -- Parsed, need to be improved
-  | Statement Name              -- DONT
-  | Function Name [Name] Expr   -- Parsed
-  | ArithmeticOp Name Expr Expr -- Parsed
-  | List [Expr]                 -- Parsed
-  | If Expr Expr Expr           -- Parsed
-  -- | Call Name [Expr]
-  -- | Function Name [Name] Expr
-  -- | Extern Name [Name]
-  -- | ArithmeticOp Name Expr Expr
-  -- | UnaryOp Name Expr
+  = Integer Int
+  | Declarator Name
+  | Float Double
+  | Var Name
+  | Operator Name
+  | Call Name
+  | Condition Name
+  | Callable Name [Expr]
+  | Statement Name
+  | Function Name [Name] Expr
+  | ArithmeticOp Name Expr Expr
+  | List [Expr]
+  | If Expr Expr Expr
   deriving (Eq, Ord)
+
+data ParserConfig = ParserConfig {
+    parseBoolean' :: Parser Expr
+  , parseVariable :: Parser Expr
+  , parserOperator :: [Parser Expr]
+  , parseCondition :: Parser Expr
+  , parseParameter :: Parser [String]
+  , codeBlockConfig :: (Formatter, [String])
+  , parseIf :: (Formatter,[String],[String])
+  , parseFunction :: (Formatter, [String], [String])
+  } | NullConfig
 
 instance Num Expr where
   (Integer i) + (Integer j) = Integer (i + j)

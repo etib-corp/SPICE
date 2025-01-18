@@ -28,11 +28,20 @@ library
       Ast
       Eval
       Files
+      Formatters
+      GLP
+      GLPInterface
+      GLPUtils
       Lib
       LispParser
       MyParser
-      NewParser
       OptParser
+      ParserConfig.Boolean
+      ParserConfig.Condition
+      ParserConfig.Function
+      ParserConfig.Operator
+      ParserConfig.Parameters
+      ParserConfig.Variable
       Prompt
       Structures
   other-modules:
