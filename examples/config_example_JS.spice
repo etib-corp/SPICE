@@ -6,3 +6,4 @@ parameters{prefix: "(", suffix: ")"}: name -> ","
 codeBlock{prefix: "{", suffix: "}"}: [";"]
 if: ["if"] -> ["else"]
 function: ["function"] -> name -> parameters -> codeBlock
+callable: ["("] -> "," -> [")"]
