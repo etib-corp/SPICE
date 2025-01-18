@@ -92,9 +92,9 @@ parseCondition' :: Formatter -> ParserConfig -> Parser Expr
 parseCondition' (p,s) cfg = parseGivenString p *> (parseExpressionConfig cfg) <* parseGivenString s
 
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
-parseCodeBlock ((p,s),sep:l) cfg = List <$> ((parseGivenString p) *>
-    parseSepBy (parseWhiteSpaces *>(parseExpressionConfig cfg)) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces)
-    <* parseGivenString s) <|> parseCodeBlock ((p,s),l) cfg
+parseCodeBlock ((p,s),l) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = List <$> ((parseGivenString p) *>
+    parseSepBy (parseWhiteSpaces *> (callableParserConfig call cfg <|> parseExpressionConfig cfg <|> parseVar)) (parseWhiteSpaces *> loopedParser l <* parseWhiteSpaces)
+    <* parseGivenString s)
 
 parseCodeBlockConfig :: Parser (Formatter, [String])
 parseCodeBlockConfig = do
