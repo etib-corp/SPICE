@@ -4,5 +4,5 @@ operators: [plus: expression -> "+" -> expression , minus: expression -> "-" -> 
 condition{prefix: "(", suffix: ")"}: expression
 parameters{prefix: "(", suffix: ")"}: name -> ","
 codeBlock{prefix: "{", suffix: "}"}: [";"]
-if: ["if"] -> [""]
+if: ["if"] -> ["else"]
 function: ["function"] -> name -> parameters -> codeBlock

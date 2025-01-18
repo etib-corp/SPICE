@@ -24,12 +24,12 @@ import Data.Char
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig pcfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func) =
-    (functionParserConfig func pcfg)
-    <|> (ifParserConfig ifconf pcfg)
-    <|> (useOps pops pcfg)
+    (ifParserConfig ifconf pcfg)
     <|> pbool
+    <|> (functionParserConfig func pcfg)
     <|> parseInteger
-    <|> (parseCodeBlock cb pcfg)
+    <|> (useOps pops pcfg)
+    -- <|> (parseCodeBlock cb pcfg)
     <|> (parseVariabl pvar)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
@@ -63,7 +63,8 @@ parseSingleOperatorConfig formatters = do
 
 parseOperatorsConfig :: Parser [(Formatter, [String], String)]
 parseOperatorsConfig = do
-    formatters <- parseGivenString "operators" *> parseFormatters <* parseWhiteSpaces <*  parseGivenString "[" <* parseWhiteSpaces
+    formatters <- parseGivenString "operators" *> parseFormatters <* parseWhiteSpaces
+    parseGivenString "[" *> parseWhiteSpaces
     result <- parseSepBy (parseSingleOperatorConfig formatters) (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces
     pure result
 
@@ -118,12 +119,12 @@ parseFunctionConfig = do
     pure $ (formatters, getOrder line, getDeclarators line)
 
 ifParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-ifParserConfig ((p,s),pref,suf) cfg@(ParserConfig _ _ _ pcond _ _ _ _) = do
-    loopedParser pref *> parseWhiteSpaces *> parseGivenString p *> parseWhiteSpaces
+ifParserConfig ((p,s),decl,suf) cfg@(ParserConfig _ _ _ pcond _ cb _ _) = do
+    loopedParser decl *> parseWhiteSpaces *> parseGivenString p *> parseWhiteSpaces
     condition <- (parseCondition' pcond cfg) <* parseWhiteSpaces
-    fstBlock <- (parseExpressionConfig cfg) <* parseWhiteSpaces
+    fstBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces
     parseWhiteSpaces *> loopedParser suf *> parseWhiteSpaces
-    sndBlock <- (parseExpressionConfig cfg) <* parseGivenString s
+    sndBlock <- (parseCodeBlock cb cfg) <* parseGivenString s
     pure $ If condition fstBlock sndBlock
 
 parseIfConfig :: Parser (Formatter, [String], [String])
