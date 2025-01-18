@@ -8,11 +8,10 @@ import Lib
 
 import Control.Applicative
 import Control.Monad
+
 import Data.Functor.Identity
 import Data.List
 import Data.Char
-import Debug.Trace
-import Structures
 
 -- | Represents an error in the parsing process, including a message and
 -- the position in the input where the error occurred.

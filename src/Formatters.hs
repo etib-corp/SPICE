@@ -1,12 +1,11 @@
 module Formatters where
 
 import MyParser
+import Structures
 
 import Control.Applicative
 
 import Data.Functor
-
-type Formatter = (String, String)
 
 parsePrefixConfig :: Parser String
 parsePrefixConfig = (parseGivenString "prefix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
