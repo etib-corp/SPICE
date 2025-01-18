@@ -9,30 +9,39 @@ import Control.Applicative
 
 import Data.Functor
 
-createOperatorParser :: [String] -> Formatter -> Parser Expr
-createOperatorParser (op:"expression":"expression":[]) (p,s) =
+formatOperator :: String -> String
+formatOperator "plus:" = "+"
+formatOperator "minus:" = "-"
+formatOperator "multiply:" = "*"
+formatOperator "divide:" = "div"
+formatOperator "modulo:" = "mod"
+formatOperator "equal:" = "eq?"
+formatOperator "assignation:" = "define"
+
+createOperatorParser :: [String] -> Formatter -> String -> Parser Expr
+createOperatorParser (op:"expression":"expression":[]) (p,s) declarator =
     ArithmeticOp <$>
-    (parseGivenString p *> parseGivenString op)
+    (parseGivenString p *> parseGivenString op $> formatOperator declarator)
     <*> (parseWhiteSpaces *> parseExpression)
     <*> (parseWhiteSpaces *> parseExpression)
     <* parseGivenString s
-createOperatorParser ("expression":op:"expression":[]) (p,s) = do
+createOperatorParser ("expression":op:"expression":[]) (p,s) declarator = do
     leftExpr <- parseGivenString p *> parseExpression
-    name <- parseWhiteSpaces *> parseGivenString op
+    name <- parseWhiteSpaces *> parseGivenString op $> formatOperator declarator
     rightExpr <- parseWhiteSpaces *> parseExpression <* parseGivenString s
     return $ ArithmeticOp name leftExpr rightExpr
-createOperatorParser ("expression":"expression":op:[]) (p,s) = do
+createOperatorParser ("expression":"expression":op:[]) (p,s) declarator = do
     leftExpr <- parseGivenString p *> parseExpression
     rightExpr <- parseWhiteSpaces *> parseExpression
-    name <- parseWhiteSpaces *> parseGivenString op <* parseGivenString s
+    name <- parseWhiteSpaces *> parseGivenString op $> formatOperator declarator <* parseGivenString s
     return $ ArithmeticOp name leftExpr rightExpr
-createOperatorParser t _ =  if (length t) >= 3 then fail ">3" else fail "<3"
+createOperatorParser t _ _ =  if (length t) >= 3 then fail ">3" else fail "<3"
 
 parseOperatorConfig' :: Formatter -> Parser (Parser Expr)
 parseOperatorConfig' f = do
-    parseWhiteSpaces *> parseDeclarator <* parseWhiteSpaces
+    declarator <- parseWhiteSpaces *> parseDeclarator <* parseWhiteSpaces
     operatorValue <- parseSepBy (parseString' <|> parseStringInQuotes) (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
-    pure $ createOperatorParser operatorValue f
+    pure $ createOperatorParser operatorValue f declarator
         where
             parseDeclarator = parseGivenString "plus:" <|> parseGivenString "minus:" <|> parseGivenString "multiply:" <|> parseGivenString "divide:" <|> parseGivenString "modulo:" <|> parseGivenString "equal:" <|> parseGivenString "assignation:"
 
