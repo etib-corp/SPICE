@@ -21,12 +21,12 @@ import Data.Functor
 import Data.Char
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
-parseExpressionConfig (ParserConfig pbool pvar pops pcond ppar cb ifconf func) =
-    (functionParserConfig func (ParserConfig pbool pvar pops pcond ppar cb ifconf func))
-    <|> (ifParserConfig ifconf (ParserConfig pbool pvar pops pcond ppar cb ifconf func))
+parseExpressionConfig pcfg@(ParserConfig pbool pvar pops pcond ppar cb ifconf func) =
+    (functionParserConfig func pcfg)
+    <|> (ifParserConfig ifconf pcfg)
     <|> parseInteger <|> pbool <|> pvar <|> pcond
     <|> (useOps pops)
-    <|> (parseCodeBlock cb (ParserConfig pbool pvar pops pcond ppar cb ifconf func))
+    <|> (parseCodeBlock cb pcfg)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
 
