@@ -9,6 +9,7 @@ import Control.Applicative
 
 import Data.Functor
 
+-- Util function to format the operator into a backend format.
 formatOperator :: String -> String
 formatOperator "plus:" = "+"
 formatOperator "minus:" = "-"
