@@ -24,11 +24,15 @@ parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig pcfg@(ParserConfig pbool pvar pops pcond ppar cb ifconf func) =
     (functionParserConfig func pcfg)
     <|> (ifParserConfig ifconf pcfg)
-    <|> parseInteger <|> pbool <|> pvar <|> pcond
+    <|> parseInteger <|> pbool <|> pcond
     <|> (useOps pops)
     <|> (parseCodeBlock cb pcfg)
+    <|> (parseVariabl pvar)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
+
+parseVariabl :: (Formatter,[String]) -> Parser Expr
+parseVariabl ((p,s),_) =  Var <$> ((parseGivenString p) *> parseName <* (parseGivenString s))
 
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
 parseCodeBlock ((p,s),sep:l) cfg = List <$> ((parseGivenString p) *>
