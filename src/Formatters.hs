@@ -27,4 +27,4 @@ parseFullFormatters = do
     pure $ (prefix, suffix)
 
 parseFormatters :: Parser Formatter
-parseFormatters = parseFullFormatters <|> parseEmptyFormatter
+parseFormatters = (parseFullFormatters <* parseWhiteSpaces <* parseGivenString ":") <|> parseEmptyFormatter

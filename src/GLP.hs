@@ -43,7 +43,7 @@ createBooleanParser _ _ = fail "Invalid boolean configuration: expected two valu
 parseBooleanConfig :: Parser (Parser Expr)
 parseBooleanConfig = do
     formatter <- parseGivenString "boolean" *> parseFormatters
-    parseGivenString ":" *> parseWhiteSpaces *> parseChar '[' *> parseWhiteSpaces
+    parseWhiteSpaces *> parseChar '[' *> parseWhiteSpaces
     boolValues <- parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces)
     parseChar ']' *> parseWhiteSpaces
     pure (createBooleanParser boolValues formatter)
@@ -79,7 +79,7 @@ parseOperatorConfig :: Parser [Parser Expr]
 parseOperatorConfig = do
     parseGivenString "operators"
     formatters <- parseFormatters
-    parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseGivenString ",") <* parseGivenString "]"
+    parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseGivenString ",") <* parseGivenString "]"
 
 createParametersConfig :: [String] -> Formatter -> Parser [String]
 createParametersConfig ("name":y:[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName (parseGivenString y) <|> pure []) <* parseWhiteSpaces <* parseGivenString s
@@ -89,14 +89,14 @@ createParametersConfig _ _ = fail "Invalid `parameters` configuration."
 parseParametersConfig :: Parser (Parser [String])
 parseParametersConfig = do
     formatters <- parseGivenString "parameters" *> parseFormatters
-    parseGivenString ":" *> parseWhiteSpaces
+    parseWhiteSpaces
     content <- parseSepBy (parseStringInQuotes <|> parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
     pure $ (createParametersConfig content formatters)
 
 parseConditionConfig :: Parser (Parser Expr)
 parseConditionConfig = do
     formatters <- parseGivenString "condition" *> parseFormatters
-    (parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
+    (parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
     pure $ parseExpression
 
 createVariableConfig' :: [String] -> Parser Expr
@@ -109,7 +109,7 @@ createVariableConfig content (p,s) = parseGivenString p *> createVariableConfig'
 
 parseVariableConfig :: Parser (Parser Expr)
 parseVariableConfig = do
-    formatters <- parseGivenString "variable" *> parseFormatters <* parseGivenString ":" <* parseWhiteSpaces
+    formatters <- parseGivenString "variable" *> parseFormatters <* parseWhiteSpaces
     table <- parseGivenString "[" *> parseSepBy (parseStringInQuotes) (parseWhiteSpaces *> parseGivenString "," <* parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces
     pure $ createVariableConfig table formatters
 
@@ -122,7 +122,7 @@ parseCodeBlockConfig :: Parser (Formatter, [String])
 parseCodeBlockConfig = do
     parseGivenString "codeBlock"
     formatters <- parseFormatters
-    parseWhiteSpaces *> parseGivenString ":" *> parseWhiteSpaces
+    parseWhiteSpaces
     separators <- parseGivenString "[" *>
         parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
         <* parseGivenString "]"
