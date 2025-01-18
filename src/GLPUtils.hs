@@ -14,10 +14,6 @@ unquote str = init $ tail str
 parseConfigString :: Parser String
 parseConfigString = parseString <|> parseString'
 
-useOps :: [Parser Expr] -> Parser Expr
-useOps (x:xs) = x <|> useOps xs
-useOps [] = fail "empty list..."
-
 loopedParser :: [String] -> Parser String
 loopedParser [] = fail "Can not parse any elements of given table."
 loopedParser (x:xs) = parseGivenString x <|> loopedParser xs
