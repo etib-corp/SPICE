@@ -20,17 +20,19 @@ data ParserConfig = ParserConfig {
   , parseVariable :: Parser Expr
   , parserOperator :: [Parser Expr]
   , parseCondition :: Parser Expr
+  , parseParameter :: Parser [String]
   , codeBlockConfig :: (Formatter, [String])
   , parseIf :: (Formatter,[String],[String])
-  --   , parseFunction :: Parser Expr
+  , parseFunction :: (Formatter, [String], [String])
   } | NullConfig
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
-parseExpressionConfig (ParserConfig pbool pvar pops pcond cb ifconf) = 
-    (ifParserConfig ifconf (ParserConfig pbool pvar pops pcond cb ifconf))
-    <|>parseInteger <|> pbool <|> pvar <|> pcond
-    <|> (useOps pops) 
-    <|> (parseCodeBlock cb (ParserConfig pbool pvar pops pcond cb ifconf))
+parseExpressionConfig (ParserConfig pbool pvar pops pcond ppar cb ifconf func) =
+    (functionParserConfig func (ParserConfig pbool pvar pops pcond ppar cb ifconf func))
+    <|> (ifParserConfig ifconf (ParserConfig pbool pvar pops pcond ppar cb ifconf func))
+    <|> parseInteger <|> pbool <|> pvar <|> pcond
+    <|> (useOps pops)
+    <|> (parseCodeBlock cb (ParserConfig pbool pvar pops pcond ppar cb ifconf func))
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
 
@@ -111,7 +113,6 @@ parseVariableConfig = do
     table <- parseGivenString "[" *> parseSepBy (parseStringInQuotes) (parseWhiteSpaces *> parseGivenString "," <* parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces
     pure $ createVariableConfig table formatters
 
-
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
 parseCodeBlock ((p,s),sep:l) cfg = List <$> ((parseGivenString p) *>
     parseSepBy (parseExpressionConfig cfg) (parseGivenString sep)
@@ -171,15 +172,39 @@ createFunctionParser tab _ _ _ = case length tab > 4 of
     True -> fail "Invalid `function` configuration: too many elements which are defining a function syntax."
     False -> fail "Invalid `function` configuration: not enough elements which are defining a function syntax."
 
-parseFunctionConfig :: Parser [String] -> Parser Expr -> Parser (Parser Expr)
-parseFunctionConfig p c = do
-    formatters <- parseGivenString "function" *> parseFormatters <* parseWhiteSpaces <* parseGivenString ":" <* parseWhiteSpaces
-    content <- parseSepBy (parseConfigString) (parseGivenString "->" *> parseWhiteSpaces)
-    pure $ createFunctionParser content formatters p c
+getOrder :: [String] -> [String]
+getOrder [] = []
+getOrder (('[':_):xs) = "declarator" : getOrder xs
+getOrder (x:xs) = x : getOrder xs
 
+getDeclarators :: [String] -> [String]
+getDeclarators [] = []
+getDeclarators (('[':xs):_) = case parseTable' xs of
+    Left err -> []
+    Right value -> value
+
+functionParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
+functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg = do
+    name <- parseName <* parseWhiteSpaces
+    parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
+    parameters <- (parseParameter cfg) <* parseWhiteSpaces
+    codeBlock <- (parseExpressionConfig cfg) <* parseWhiteSpaces <* parseGivenString s
+    pure $ Function name parameters codeBlock
+functionParserConfig ((p,s),("declarator":"name":xs),declarators) cfg = do
+    parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
+    name <- parseName <* parseWhiteSpaces
+    parameters <- (parseParameter cfg) <* parseWhiteSpaces
+    codeBlock <- (parseExpressionConfig cfg) <* parseWhiteSpaces
+    pure $ Function name parameters codeBlock
+
+parseFunctionConfig :: Parser (Formatter, [String], [String])
+parseFunctionConfig = do
+    formatters <- parseGivenString "function" *> parseFormatters <* parseWhiteSpaces
+    line <- parseSepBy (parseConfigString) (parseWhiteSpaces *> parseGivenString "->" <* parseWhiteSpaces)
+    pure $ (formatters, getOrder line, getDeclarators line)
 
 ifParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-ifParserConfig ((p,s),pref,suf) cfg = do 
+ifParserConfig ((p,s),pref,suf) cfg = do
     loopedParser pref *> parseWhiteSpaces *> parseGivenString p *> parseWhiteSpaces
     condition <- (parseExpressionConfig cfg) <* parseWhiteSpaces
     fstBlock <- (parseExpressionConfig cfg) <* parseWhiteSpaces
@@ -187,11 +212,10 @@ ifParserConfig ((p,s),pref,suf) cfg = do
     sndBlock <- (parseExpressionConfig cfg) <* parseGivenString s
     pure $ If condition fstBlock sndBlock
 
-
 parseIfConfig :: Parser (Formatter, [String], [String])
 parseIfConfig = do
     formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces
-    pref <- parseGivenString "[" *> 
+    pref <- parseGivenString "[" *>
         parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
         <* parseGivenString "]"
     parseWhiteSpaces *> parseGivenString "->" *> parseWhiteSpaces
@@ -200,39 +224,12 @@ parseIfConfig = do
         <* parseGivenString "]"
     pure $ (formatters,pref,suf)
 
-
 parseConfigTest :: IO ()
 parseConfigTest = case parse "variable{prefix: \"(\", suffix: \")\"}: name -> [\"define\"]" parseVariableConfig of
     Left err -> putStrLn $ show err
     Right pa -> case parse "(a define)" pa of
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
-
-getOperatorsParserTest :: [Parser Expr]
-getOperatorsParserTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression, minus:\"-\" -> expression -> expression, multiply: \"*\" -> expression -> expression, divide: \"/\" -> expression -> expression]" parseOperatorConfig of
-    Left err -> fail "error with operators"
-    Right p -> p
-
-getVariableParserTest :: Parser Expr
-getVariableParserTest = case parse "variable{prefix: \"(\", suffix: \")\"}: [\"define\"] -> name" parseVariableConfig of
-    Left _ -> fail "error with variable"
-    Right p -> p
-
-getConditionParserTest :: Parser Expr
-getConditionParserTest = case parse "condition{prefix: \"(\", suffix: \")\"}: expression" parseConditionConfig of
-    Left _ -> fail "error with condition"
-    Right p -> p
-
-getParameterParserTest :: Parser Expr
-getParameterParserTest = case parse "parameters{prefix: \"(\", suffix: \")\"}: name -> \" \"" parseConditionConfig of
-    Left _ -> fail "error with parameters"
-    Right p -> p
-
-
-getFunctionParserTest :: Parser [String] -> Parser Expr -> Parser Expr
-getFunctionParserTest ps pa = case parse "function{prefix: \"(\", suffix: \")\"}: [\"define\"] -> name -> parameters -> codeBlock" (parseFunctionConfig ps pa) of
-    Left _ -> fail "error with function"
-    Right p -> p
 
 parseWithConfig :: String -> ParserConfig -> IO()
 parseWithConfig s pc = case parse s (parseExpressionConfig pc) of
@@ -253,10 +250,10 @@ parseSyntaxConfiguration tab | length tab == 8 = case parse (tab !! 0) parseBool
                 Right cond -> case parse (tab !! 4) parseParametersConfig of
                     Right param -> case parse (tab !! 5) parseCodeBlockConfig of
                         Right code -> case parse (tab !! 6) parseIfConfig of
-                            -- Right ifConf -> case parse (tab !! 7) (parseFunctionConfig param code) of
-                                Right ifConf -> Just $ ParserConfig bool var op cond code ifConf
+                            Right ifConf -> case parse (tab !! 7) parseFunctionConfig of
+                                Right func -> Just $ ParserConfig bool var op cond param code ifConf func
                                 Left _ -> trace ("fail function") Nothing
-                            -- Left _ -> trace ("fail if") Nothing
+                            Left _ -> trace ("fail if") Nothing
                         Left _ -> trace ("fail code") Nothing
                     Left _ -> trace ("fail param") Nothing
                 Left _ -> trace ("fail cond") Nothing
