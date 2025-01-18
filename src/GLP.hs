@@ -5,14 +5,15 @@ import Structures
 import LispParser
 import Files
 import Lib
+import Formatters
+import GLPUtils
 
 import Control.Applicative
+
 import Data.Functor
 import Data.Char
 
 import Debug.Trace
-
-type Formatter = (String, String)
 
 data ParserConfig = ParserConfig {
     parseBoolean' :: Parser Expr
@@ -24,45 +25,14 @@ data ParserConfig = ParserConfig {
   --   , parseFunction :: Parser Expr
   } | NullConfig
 
-unquote :: String -> String
-unquote [] = ""
-unquote str = init $ tail str
-
-parseConfigString :: Parser String
-parseConfigString = parseString <|> parseString'
-
-parsePrefixConfig :: Parser String
-parsePrefixConfig = (parseGivenString "prefix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
-
-parseSuffixConfig :: Parser String
-parseSuffixConfig = (parseGivenString "suffix:" *> parseWhiteSpaces *> parseStringInQuotes) <|> parseGivenString ""
-
-useOps :: [Parser Expr] -> Parser Expr
-useOps (x:xs) = x <|> useOps xs
-useOps [] = fail "empty list..."
-
 parseExpressionConfig :: ParserConfig -> Parser Expr
-parseExpressionConfig (ParserConfig pbool pvar pops pcond cb ifconf) = parseInteger <|> pbool <|> pvar <|> pcond
-    <|> (ifParserConfig ifconf (ParserConfig pbool pvar pops pcond cb ifconf))
+parseExpressionConfig (ParserConfig pbool pvar pops pcond cb ifconf) = 
+    (ifParserConfig ifconf (ParserConfig pbool pvar pops pcond cb ifconf))
+    <|>parseInteger <|> pbool <|> pvar <|> pcond
     <|> (useOps pops) 
     <|> (parseCodeBlock cb (ParserConfig pbool pvar pops pcond cb ifconf))
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
-
-parseEmptyFormatter :: Parser Formatter
-parseEmptyFormatter = parseGivenString ":" $> ("","")
-
-parseFullFormatters :: Parser Formatter
-parseFullFormatters = do
-    parseGivenString "{" *> parseWhiteSpaces
-    prefix <- parsePrefixConfig
-    ((parseWhiteSpaces *> parseGivenString ",") <|> parseGivenString "") *> parseWhiteSpaces
-    suffix <- parseSuffixConfig
-    parseGivenString "}"
-    pure $ (prefix, suffix)
-
-parseFormatters :: Parser Formatter
-parseFormatters = parseFullFormatters <|> parseEmptyFormatter
 
 createBooleanParser :: [String] -> Formatter -> Parser Expr
 createBooleanParser (x:y:[]) (p,s) = fmap Integer (parseGivenString p *> (parseGivenString x $> 1 <|> parseGivenString y $> 0) <* parseGivenString s)
@@ -109,14 +79,6 @@ parseOperatorConfig = do
     formatters <- parseFormatters
     parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "[" *> parseWhiteSpaces *> parseSepBy (parseOperatorConfig' formatters) (parseGivenString ",") <* parseGivenString "]"
 
-extractValidParser :: String -> [Parser a] -> Either Error a
-extractValidParser str [x] = case parse str x of
-    Left (Error msg pos) -> Left (Error ("Unknown operator. " ++ msg) pos)
-    Right value -> Right value
-extractValidParser str (x:xs) = case parse str x of
-    Left _ -> extractValidParser str xs
-    Right value -> Right value
-
 createParametersConfig :: [String] -> Formatter -> Parser [String]
 createParametersConfig ("name":y:[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName (parseGivenString y) <|> pure []) <* parseWhiteSpaces <* parseGivenString s
 createParametersConfig ("name":[]) (p,s) = parseGivenString p *> parseWhiteSpaces *> (parseSepBy parseName parseWhiteSpaces <|> pure []) <* parseWhiteSpaces <* parseGivenString s
@@ -134,10 +96,6 @@ parseConditionConfig = do
     formatters <- parseGivenString "condition" *> parseFormatters
     (parseGivenString ":" *> parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
     pure $ parseExpression
-
-loopedParser :: [String] -> Parser String
-loopedParser [] = fail "Can not parse any elements of given table."
-loopedParser (x:xs) = parseGivenString x <|> loopedParser xs
 
 createVariableConfig' :: [String] -> Parser Expr
 createVariableConfig' [] = fail "Invalid `variable` configuration."
@@ -168,12 +126,6 @@ parseCodeBlockConfig = do
         parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
         <* parseGivenString "]"
     pure $ (formatters, separators)
-
-parseTable :: Parser String
-parseTable = parseGivenString "[" *> parseSomeUntil (parseAnyChar) (parseChar ']')
-
-parseTable' :: String -> Either Error [String]
-parseTable' tab = parse tab (parseSepBy parseStringInQuotes (parseGivenString "," *> parseWhiteSpaces) <* parseWhiteSpaces)
 
 createFunctionParser' :: [String] -> [String] -> Formatter -> Parser [String] -> Parser Expr -> Parser Expr
 createFunctionParser' ("declarator":"name":"parameters":"codeBlock":[]) declarators (p,s) par cod = do
@@ -256,11 +208,6 @@ parseConfigTest = case parse "variable{prefix: \"(\", suffix: \")\"}: name -> [\
         Left err -> putStrLn $ show err
         Right result -> putStrLn $ show result
 
-getBooleanParserTest :: Parser Expr
-getBooleanParserTest = case parse "boolean{prefix: \"(\", suffix: \")\"}: [\"#t\", \"#f\"]" parseBooleanConfig of
-    Left err -> fail "Error boolean"
-    Right p -> p
-
 getOperatorsParserTest :: [Parser Expr]
 getOperatorsParserTest = case parse "operators{prefix: \"(\", suffix: \")\"}: [plus: \"+\" -> expression -> expression, minus:\"-\" -> expression -> expression, multiply: \"*\" -> expression -> expression, divide: \"/\" -> expression -> expression]" parseOperatorConfig of
     Left err -> fail "error with operators"
@@ -288,7 +235,7 @@ getFunctionParserTest ps pa = case parse "function{prefix: \"(\", suffix: \")\"}
     Right p -> p
 
 parseWithConfig :: String -> ParserConfig -> IO()
-parseWithConfig s pc = case parse s ((ifParserConfig (("{","}"),["if"],["else"]) pc)) of
+parseWithConfig s pc = case parse s (parseExpressionConfig pc) of
       Left err -> putStrLn $ show err
       Right result -> print result
 
@@ -329,4 +276,3 @@ testParserConfiguration content = case getParserConfiguration content of
 
 loadParserConfiguration :: String -> IO ParserConfig
 loadParserConfiguration path = secureGetContent path >>= testParserConfiguration
-

@@ -28,7 +28,9 @@ library
       Ast
       Eval
       Files
+      Formatters
       GLP
+      GLPUtils
       Lib
       LispParser
       MyParser
