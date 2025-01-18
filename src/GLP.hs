@@ -41,7 +41,7 @@ parseVar = Var <$> parseName <|> fail "Failed to parse variable."
 callableParserConfig :: (Formatter, [String], String, [String]) -> ParserConfig -> Parser Expr
 callableParserConfig ((p,s),pref,sep,suf) cfg = do
     name <- parseGivenString p *> parseWhiteSpaces *> parseName <* parseWhiteSpaces
-    params <- loopedParser pref *> parseSepBy (parseExpressionConfig cfg <|> parseVar) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces
+    params <- loopedParser pref *> parseSepBy (parseWhiteSpaces *> parseExpressionConfig cfg <|> parseVar) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces
     pure $ Callable name params
 
 operatorParserConfig :: (Formatter, [String], String) -> ParserConfig -> Parser Expr
@@ -128,7 +128,7 @@ parseFunctionConfig = do
 
 ifParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
 ifParserConfig ((p,s),decl,suf) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
-    loopedParser decl *> parseWhiteSpaces *> parseGivenString p *> parseWhiteSpaces
+    parseGivenString p *> parseWhiteSpaces *> loopedParser decl *> parseWhiteSpaces
     condition <- (parseCondition' pcond cfg) <* parseWhiteSpaces
     fstBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces
     parseWhiteSpaces *> loopedParser suf *> parseWhiteSpaces
