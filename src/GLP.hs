@@ -27,11 +27,11 @@ parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig pcfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) =
     (ifParserConfig ifconf pcfg)
     <|> (useOps pops pcfg)
-    <|> pbool
     <|> (functionParserConfig func pcfg)
+    <|> pbool
     <|> parseInteger
-    <|> (parseVariabl pvar pcfg)
     <|> (callableParserConfig call pcfg)
+    <|> (parseVariabl pvar pcfg)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
 
@@ -39,26 +39,26 @@ parseVar :: Parser Expr
 parseVar = Var <$> parseName <|> fail "Failed to parse variable."
 
 callableParserConfig :: (Formatter, [String], String, [String]) -> ParserConfig -> Parser Expr
-callableParserConfig ((p,s),pref,sep,suf) cfg = do
-    name <- parseGivenString p *> parseWhiteSpaces *> parseName <* parseWhiteSpaces
-    params <- loopedParser pref *> parseSepBy (parseExpressionConfig cfg <|> parseVar) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces
-    pure $ Callable name params
+callableParserConfig ((p,s),pref,sep,suf) cfg = Callable <$> name <*> params
+    where
+        name = parseGivenString p *> parseWhiteSpaces *> parseName
+        params = loopedParser pref *> parseSepBy (parseWhiteSpaces *> parseExpressionConfig cfg <|> parseVar) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces <* loopedParser suf
 
 operatorParserConfig :: (Formatter, [String], String) -> ParserConfig -> Parser Expr
-operatorParserConfig ((p,s),("expression":op:"expression":[]), declarator) cfg = do
-    left <- parseGivenString p *>  (parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
+operatorParserConfig ((p,s),("expression":op:"expression":[]), declarator) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = do
+    left <- parseGivenString p *>  (callableParserConfig call cfg <|> parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
     operator <- (parseGivenString op $> formatOperator declarator) <* parseWhiteSpaces
-    right <- (parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces <* parseGivenString s
+    right <- (callableParserConfig call cfg <|> parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces <* parseGivenString s
     pure $ ArithmeticOp operator left right
-operatorParserConfig ((p,s),("expression":"expression":op:[]), declarator) cfg = do
-    left <- parseGivenString p *>  (parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
-    right <- (parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
+operatorParserConfig ((p,s),("expression":"expression":op:[]), declarator) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = do
+    left <- parseGivenString p *>  (callableParserConfig call cfg <|> parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
+    right <- (callableParserConfig call cfg <|> parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
     operator <- (parseGivenString op $> formatOperator declarator) <* parseWhiteSpaces <* parseGivenString s
     pure $ ArithmeticOp operator left right
-operatorParserConfig ((p,s),(op:"expression":"expression":[]), declarator) cfg = do
+operatorParserConfig ((p,s),(op:"expression":"expression":[]), declarator) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = do
     operator <- parseGivenString p *> (parseGivenString op $> formatOperator declarator) <* parseWhiteSpaces
-    left <- (parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
-    right <- (parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces <* parseGivenString s
+    left <- (callableParserConfig call cfg <|> parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces
+    right <- (callableParserConfig call cfg <|> parseVar <|> parseInteger <|> parseExpressionConfig cfg) <* parseWhiteSpaces <* parseGivenString s
     pure $ ArithmeticOp operator left right
 operatorParserConfig (f, t, d) _ = fail "Failed to parse operator"
 
@@ -75,44 +75,33 @@ parseOperatorsConfig = do
     result <- parseSepBy (parseSingleOperatorConfig formatters) (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces
     pure result
 
-testParseOperatorsConfig :: Parser [String]
-testParseOperatorsConfig = do
-    content <- parseSepBy (parseStringInQuotes <|> parseString') (parseWhiteSpaces *> parseGivenString "->" *> parseWhiteSpaces) <* parseWhiteSpaces
-    pure content
-
 useOps :: [(Formatter,[String], String)] -> ParserConfig -> Parser Expr
 useOps [] _ = fail "No operators found."
 useOps (x:xs) cfg = operatorParserConfig x cfg <|> useOps xs cfg
 
 parseVariabl :: (Formatter,[String]) -> ParserConfig -> Parser Expr
-parseVariabl ((p,s),declarator) cfg@(ParserConfig _ _ pops _ _ _ _ _ _) = do
-    parseGivenString p *> loopedParser declarator *> parseWhiteSpaces *> (useOps pops cfg ) <* parseGivenString s
+parseVariabl ((p,s),declarator) cfg@(ParserConfig _ _ pops _ _ _ _ _ _) = parseGivenString p *> loopedParser declarator *> parseWhiteSpaces *> (useOps pops cfg ) <* parseGivenString s
 
 parseCondition' :: Formatter -> ParserConfig -> Parser Expr
 parseCondition' (p,s) cfg = parseGivenString p *> (parseExpressionConfig cfg) <* parseGivenString s
 
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
-parseCodeBlock ((p,s),sep:l) cfg = List <$> ((parseGivenString p) *>
-    parseSepBy (parseWhiteSpaces *>(parseExpressionConfig cfg)) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces)
-    <* parseGivenString s) <|> parseCodeBlock ((p,s),l) cfg
+parseCodeBlock ((p,s),l) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = List <$> ((parseGivenString p) *>
+    parseSepBy (parseWhiteSpaces *> (callableParserConfig call cfg <|> parseExpressionConfig cfg <|> parseVar)) (parseWhiteSpaces *> loopedParser l <* parseWhiteSpaces)
+    <* parseGivenString s)
 
 parseCodeBlockConfig :: Parser (Formatter, [String])
-parseCodeBlockConfig = do
-    parseGivenString "codeBlock"
-    formatters <- parseFormatters
-    parseWhiteSpaces
-    separators <- parseGivenString "[" *>
-        parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
-        <* parseGivenString "]"
-    pure $ (formatters, separators)
+parseCodeBlockConfig = (,) <$> formatters <*> separators
+    where
+        formatters = parseGivenString "codeBlock" *> parseFormatters <* parseWhiteSpaces
+        separators = parseGivenString "[" *> parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
 
 functionParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
-    name <- parseName <* parseWhiteSpaces
-    parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
-    parameters <- (parseParameter cfg) <* parseWhiteSpaces
-    codeBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces <* parseGivenString s
-    pure $ Function name parameters codeBlock
+functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = Function <$> name <*> parameters <*> codeBlock
+    where
+        name = parseName <* parseWhiteSpaces <* parseGivenString p <* parseWhiteSpaces <* loopedParser declarators <* parseWhiteSpaces
+        parameters = (parseParameter cfg) <* parseWhiteSpaces
+        codeBlock = (parseCodeBlock cb cfg) <* parseWhiteSpaces <* parseGivenString s
 functionParserConfig ((p,s),("declarator":"name":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
     parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
     name <- parseName <* parseWhiteSpaces
@@ -127,25 +116,19 @@ parseFunctionConfig = do
     pure $ (formatters, getOrder line, getDeclarators line)
 
 ifParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-ifParserConfig ((p,s),decl,suf) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
-    loopedParser decl *> parseWhiteSpaces *> parseGivenString p *> parseWhiteSpaces
-    condition <- (parseCondition' pcond cfg) <* parseWhiteSpaces
-    fstBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces
-    parseWhiteSpaces *> loopedParser suf *> parseWhiteSpaces
-    sndBlock <- (parseCodeBlock cb cfg) <* parseGivenString s
-    pure $ If condition fstBlock sndBlock
+ifParserConfig ((p,s),decl,suf) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = If <$> condition <*> fstBlock <*> sndBlock
+    where
+        condition = parseGivenString p *> parseWhiteSpaces *> loopedParser decl *> parseWhiteSpaces *> (parseCondition' pcond cfg) <* parseWhiteSpaces
+        fstBlock = (parseCodeBlock cb cfg) <* parseWhiteSpaces <* loopedParser suf <* parseWhiteSpaces
+        sndBlock = (parseCodeBlock cb cfg) <* parseGivenString s
 
 parseIfConfig :: Parser (Formatter, [String], [String])
-parseIfConfig = do
-    formatters <- parseGivenString "if" *> parseFormatters <* parseWhiteSpaces
-    pref <- parseGivenString "[" *>
-        parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
-        <* parseGivenString "]"
-    parseWhiteSpaces *> parseGivenString "->" *> parseWhiteSpaces
-    suf <- parseGivenString "[" *>
-        parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces)
-        <* parseGivenString "]"
-    pure $ (formatters,pref,suf)
+parseIfConfig = (,,) <$> formatters <*> pref <*> suf
+    where
+        formatters = parseGivenString "if" *> parseFormatters <* parseWhiteSpaces
+        pref = parseGivenString "[" *> parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <*
+            parseGivenString "]" <* parseWhiteSpaces <* parseGivenString "->" <* parseWhiteSpaces
+        suf = parseGivenString "[" *> parseSepBy parseStringInQuotes (parseWhiteSpaces *> parseGivenString "," *> parseWhiteSpaces) <* parseGivenString "]"
 
 parseSyntaxConfiguration :: [String] -> Maybe ParserConfig
 parseSyntaxConfiguration tab | length tab == 9 = case parse (tab !! 0) parseBooleanConfig of
