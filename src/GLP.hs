@@ -14,6 +14,7 @@ import ParametersConfig
 import ConditionConfig
 import VariableConfig
 import FunctionConfig
+import CallableConfig
 
 import Control.Applicative
 
@@ -23,18 +24,25 @@ import Data.Functor
 import Data.Char
 
 parseExpressionConfig :: ParserConfig -> Parser Expr
-parseExpressionConfig pcfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func) =
+parseExpressionConfig pcfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) =
     (ifParserConfig ifconf pcfg)
     <|> (useOps pops pcfg)
     <|> pbool
     <|> (functionParserConfig func pcfg)
     <|> parseInteger
     <|> (parseVariabl pvar pcfg)
+    <|> (callableParserConfig call pcfg)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
 
 parseVar :: Parser Expr
 parseVar = Var <$> parseName <|> fail "Failed to parse variable."
+
+callableParserConfig :: (Formatter, [String], String, [String]) -> ParserConfig -> Parser Expr
+callableParserConfig ((p,s),pref,sep,suf) cfg = do
+    name <- parseGivenString p *> parseWhiteSpaces *> parseName <* parseWhiteSpaces
+    params <- loopedParser pref *> parseSepBy (parseExpressionConfig cfg) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces
+    pure $ Callable name params
 
 operatorParserConfig :: (Formatter, [String], String) -> ParserConfig -> Parser Expr
 operatorParserConfig ((p,s),("expression":op:"expression":[]), declarator) cfg = do
@@ -77,7 +85,7 @@ useOps [] _ = fail "No operators found."
 useOps (x:xs) cfg = operatorParserConfig x cfg <|> useOps xs cfg
 
 parseVariabl :: (Formatter,[String]) -> ParserConfig -> Parser Expr
-parseVariabl ((p,s),declarator) cfg@(ParserConfig _ _ pops _ _ _ _ _) = do
+parseVariabl ((p,s),declarator) cfg@(ParserConfig _ _ pops _ _ _ _ _ _) = do
     parseGivenString p *> loopedParser declarator *> parseWhiteSpaces *> (useOps pops cfg ) <* parseGivenString s
 
 parseCondition' :: Formatter -> ParserConfig -> Parser Expr
@@ -99,13 +107,13 @@ parseCodeBlockConfig = do
     pure $ (formatters, separators)
 
 functionParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _) = do
+functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
     name <- parseName <* parseWhiteSpaces
     parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
     parameters <- (parseParameter cfg) <* parseWhiteSpaces
     codeBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces <* parseGivenString s
     pure $ Function name parameters codeBlock
-functionParserConfig ((p,s),("declarator":"name":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _) = do
+functionParserConfig ((p,s),("declarator":"name":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
     parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
     name <- parseName <* parseWhiteSpaces
     parameters <- (parseParameter cfg) <* parseWhiteSpaces
@@ -119,7 +127,7 @@ parseFunctionConfig = do
     pure $ (formatters, getOrder line, getDeclarators line)
 
 ifParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-ifParserConfig ((p,s),decl,suf) cfg@(ParserConfig _ _ _ pcond _ cb _ _) = do
+ifParserConfig ((p,s),decl,suf) cfg@(ParserConfig _ _ _ pcond _ cb _ _ _) = do
     loopedParser decl *> parseWhiteSpaces *> parseGivenString p *> parseWhiteSpaces
     condition <- (parseCondition' pcond cfg) <* parseWhiteSpaces
     fstBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces
@@ -140,7 +148,7 @@ parseIfConfig = do
     pure $ (formatters,pref,suf)
 
 parseSyntaxConfiguration :: [String] -> Maybe ParserConfig
-parseSyntaxConfiguration tab | length tab == 8 = case parse (tab !! 0) parseBooleanConfig of
+parseSyntaxConfiguration tab | length tab == 9 = case parse (tab !! 0) parseBooleanConfig of
     Right bool -> case parse (tab !! 1) parseVariableConfig of
         Right var -> case parse (tab !! 2) parseOperatorsConfig of
             Right op -> case parse (tab !! 3) parseConditionConfig of
@@ -148,7 +156,9 @@ parseSyntaxConfiguration tab | length tab == 8 = case parse (tab !! 0) parseBool
                     Right param -> case parse (tab !! 5) parseCodeBlockConfig of
                         Right code -> case parse (tab !! 6) parseIfConfig of
                             Right ifConf -> case parse (tab !! 7) parseFunctionConfig of
-                                Right func -> Just $ ParserConfig bool var op cond param code ifConf func
+                                Right func -> case parse (tab !! 8) parseCallableConfig of
+                                    Right call -> Just $ ParserConfig bool var op cond param code ifConf func call
+                                    Left _ -> Nothing
                                 Left _ -> Nothing
                             Left _ -> Nothing
                         Left _ -> Nothing

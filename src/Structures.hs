@@ -38,6 +38,7 @@ data ParserConfig = ParserConfig {
   , codeBlockConfig :: (Formatter, [String])
   , parseIf :: (Formatter,[String],[String])
   , parseFunction :: (Formatter, [String], [String])
+  , parseCallable :: (Formatter, [String], String, [String])
   } | NullConfig
 
 instance Num Expr where
