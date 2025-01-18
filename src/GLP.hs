@@ -115,7 +115,7 @@ parseVariableConfig = do
 
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
 parseCodeBlock ((p,s),sep:l) cfg = List <$> ((parseGivenString p) *>
-    parseSepBy (parseExpressionConfig cfg) (parseGivenString sep)
+    parseSepBy (parseWhiteSpaces *>(parseExpressionConfig cfg)) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces)
     <* parseGivenString s) <|> parseCodeBlock ((p,s),l) cfg
 
 parseCodeBlockConfig :: Parser (Formatter, [String])
