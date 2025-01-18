@@ -17,8 +17,8 @@ createVariableConfig :: [String] -> Formatter -> Parser Expr
 createVariableConfig [] _ = fail "Invalid `variable` configuration."
 createVariableConfig content (p,s) = parseGivenString p *> createVariableConfig' content <* parseGivenString s
 
-parseVariableConfig :: Parser (Parser Expr)
+parseVariableConfig :: Parser (Formatter, [String])
 parseVariableConfig = do
     formatters <- parseGivenString "variable" *> parseFormatters <* parseWhiteSpaces
     table <- parseGivenString "[" *> parseSepBy (parseStringInQuotes) (parseWhiteSpaces *> parseGivenString "," <* parseWhiteSpaces) <* parseGivenString "]" <* parseWhiteSpaces
-    pure $ createVariableConfig table formatters
+    pure $ (formatters,table)

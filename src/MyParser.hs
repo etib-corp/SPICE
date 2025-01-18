@@ -122,6 +122,9 @@ parseString' = some (satisfy isAlpha)
 parseSepBy :: Parser a -> Parser b -> Parser [a]
 parseSepBy p1 p2 = (:) <$> p1 <*> (many (p2 *> p1))
 
+parseSepBy' :: Parser a -> Parser b -> Parser [a]
+parseSepBy' p1 p2 = (:) <$> p1 <*> (some (p2 *> p1))
+
 -- | Parses with a first parser while it parses using the second parser given as argument.
 parseManyUntil :: Parser a -> Parser b -> Parser [a]
 parseManyUntil pa pb = (pb *> pure []) <|> fmap (:) pa <*> parseManyUntil pa pb

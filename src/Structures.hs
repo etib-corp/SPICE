@@ -31,9 +31,9 @@ data Expr
 
 data ParserConfig = ParserConfig {
     parseBoolean' :: Parser Expr
-  , parseVariable :: Parser Expr
-  , parserOperator :: [Parser Expr]
-  , parseCondition :: Parser Expr
+  , parseVariable :: (Formatter,[String])
+  , parserOperator :: [(Formatter, [String], String)]
+  , parseCondition :: Formatter
   , parseParameter :: Parser [String]
   , codeBlockConfig :: (Formatter, [String])
   , parseIf :: (Formatter,[String],[String])

@@ -10,8 +10,8 @@ import Control.Applicative
 
 import Data.Functor
 
-parseConditionConfig :: Parser (Parser Expr)
+parseConditionConfig :: Parser Formatter
 parseConditionConfig = do
     formatters <- parseGivenString "condition" *> parseFormatters
     (parseWhiteSpaces *> parseGivenString "expression") <|> fail "Invalid `condition` configuration."
-    pure $ parseExpression
+    pure $ formatters
