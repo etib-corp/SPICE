@@ -34,30 +34,36 @@ isWhiteSpace '\n' = True
 isWhiteSpace '\t' = True
 isWhiteSpace _ = False
 
+-- | Returns a list without the last element.
 wLast :: [a] -> [a]
 wLast [] = []
 wLast [x] = []
 wLast (x:xs) = x : wLast xs
 
+-- | Returns the last char of a string.
 lastChar :: String -> Char
 lastChar [] = '\0'
 lastChar (x:[]) = x
 lastChar (_:xs) = lastChar xs
 
+-- | Print the content of a file.
 catFile :: String -> IO ()
 catFile path = do
     (readFile path) >>= putStrLn
 
+-- | Returns a string until a given char is found.
 getUntilChar :: String -> Char -> String
 getUntilChar [] _ = []
 getUntilChar (x:xs) c   | x == c = []
                         | otherwise = x : getUntilChar xs c
 
+-- | Returns a string until a backspace is found.
 getUntilBackspace :: String -> String
 getUntilBackspace [] = []
 getUntilBackspace (x:xs)    | x == '\n' = []
                             | otherwise = x : getUntilBackspace xs
 
+-- | Returns the first element of a list that match the given function.
 mapFilterByIndex :: [(a, b)] -> (a -> Bool) -> (a, b)
 mapFilterByIndex (x:[]) _ = x
 mapFilterByIndex ((k,v):xs) func    | func k = (k,v)

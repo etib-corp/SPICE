@@ -8,6 +8,7 @@ import Control.Applicative
 
 import Data.Functor
 
+-- Parse the configuration for a callable and returns it as a tuple.
 parseCallableConfig :: Parser (Formatter, [String], String, [String])
 parseCallableConfig = (,,,) <$> formatters <*> pref <*> sep <*> suf
     where

@@ -9,10 +9,13 @@ import Control.Monad
 import Data.List (nubBy)
 import Data.Fixed (mod')
 
+-- | Type alias for the name of a variable or a function.
 type Name = String
 
+-- | Type alias for the formatter of an expression.
 type Formatter = (String, String)
 
+-- | Data type for the expression.
 data Expr
   = Integer Int
   | Declarator Name
@@ -29,6 +32,7 @@ data Expr
   | If Expr Expr Expr
   deriving (Eq, Ord)
 
+-- | Data type for the parser configuration. It contains the different parsers for the different types of expressions.
 data ParserConfig = ParserConfig {
     parseBoolean' :: Parser Expr
   , parseVariable :: (Formatter,[String])
