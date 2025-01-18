@@ -99,17 +99,17 @@ parseCodeBlockConfig = do
     pure $ (formatters, separators)
 
 functionParserConfig :: (Formatter, [String], [String]) -> ParserConfig -> Parser Expr
-functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg = do
+functionParserConfig ((p,s),("name":"declarator":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _) = do
     name <- parseName <* parseWhiteSpaces
     parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
     parameters <- (parseParameter cfg) <* parseWhiteSpaces
-    codeBlock <- (parseExpressionConfig cfg) <* parseWhiteSpaces <* parseGivenString s
+    codeBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces <* parseGivenString s
     pure $ Function name parameters codeBlock
-functionParserConfig ((p,s),("declarator":"name":xs),declarators) cfg = do
+functionParserConfig ((p,s),("declarator":"name":xs),declarators) cfg@(ParserConfig _ _ _ pcond _ cb _ _) = do
     parseGivenString p *> parseWhiteSpaces *> loopedParser declarators *> parseWhiteSpaces
     name <- parseName <* parseWhiteSpaces
     parameters <- (parseParameter cfg) <* parseWhiteSpaces
-    codeBlock <- (parseExpressionConfig cfg) <* parseWhiteSpaces
+    codeBlock <- (parseCodeBlock cb cfg) <* parseWhiteSpaces
     pure $ Function name parameters codeBlock
 
 parseFunctionConfig :: Parser (Formatter, [String], [String])
