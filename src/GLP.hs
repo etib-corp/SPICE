@@ -25,10 +25,10 @@ import Data.Char
 parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig pcfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func) =
     (ifParserConfig ifconf pcfg)
+    <|> (useOps pops pcfg)
     <|> pbool
     <|> (functionParserConfig func pcfg)
     <|> parseInteger
-    <|> (useOps pops pcfg)
     -- <|> (parseCodeBlock cb pcfg)
     <|> (parseVariabl pvar)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
