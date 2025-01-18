@@ -17,6 +17,8 @@ import FunctionConfig
 
 import Control.Applicative
 
+import Debug.Trace
+
 import Data.Functor
 import Data.Char
 
@@ -24,9 +26,12 @@ parseExpressionConfig :: ParserConfig -> Parser Expr
 parseExpressionConfig pcfg@(ParserConfig pbool pvar pops pcond ppar cb ifconf func) =
     (functionParserConfig func pcfg)
     <|> (ifParserConfig ifconf pcfg)
-    <|> parseInteger <|> pbool <|> pvar <|> pcond
+    <|> parseInteger
+    <|> pbool
+    <|> pcond
     <|> (useOps pops pcfg)
     <|> (parseCodeBlock cb pcfg)
+    <|> (parseVariabl pvar)
 parseExpressionConfig NullConfig = fail "Invalid parser config."
 parseExpressionConfig _ = fail "failed to parse expression"
 
@@ -60,8 +65,11 @@ parseOperatorsConfig = do
     pure result
 
 useOps :: [(Formatter,[String], String)] -> ParserConfig -> Parser Expr
-useOps [] _ = fail "No operators found."
+useOps [] _ = trace "no op" $ fail "No operators found."
 useOps (x:xs) cfg = operatorParserConfig x cfg <|> useOps xs cfg
+
+parseVariabl :: (Formatter,[String]) -> Parser Expr
+parseVariabl ((p,s),_) =  Var <$> ((parseGivenString p) *> parseName <* (parseGivenString s))
 
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
 parseCodeBlock ((p,s),sep:l) cfg = List <$> ((parseGivenString p) *>

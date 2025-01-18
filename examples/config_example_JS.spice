@@ -1,6 +1,6 @@
 boolean{prefix:"(", suffix:")"}: ["true", "false"]
 variable{prefix:"", suffix: ""}: ["let", "const", "var"]
-operators: [plus: expression -> "+" -> expression, minus: expression -> "-" -> expression, multiply: expression -> "*" -> expression, divide: expression -> "/" -> expression, modulo: expression -> "%" -> expression, equal: expression -> "===" -> expression, assignation: name -> "=" -> expression]
+operators: [plus: expression -> "+" -> expression, minus: expression -> "-" -> expression, multiply: expression -> "*" -> expression, divide: expression -> "/" -> expression, modulo: expression -> "%" -> expression, equal: expression -> "===" -> expression, assignation: expression -> "=" -> expression]
 condition{prefix: "(", suffix: ")"}: expression
 parameters{prefix: "(", suffix: ")"}: name -> ","
 codeBlock{prefix: "{", suffix: "}"}: [";"]
