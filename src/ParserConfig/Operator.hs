@@ -1,4 +1,4 @@
-module OperatorConfig where
+module ParserConfig.Operator where
 
 import MyParser
 import Structures

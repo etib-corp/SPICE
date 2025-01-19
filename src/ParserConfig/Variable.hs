@@ -1,4 +1,4 @@
-module VariableConfig where
+module ParserConfig.Variable where
 
 import MyParser
 import Structures

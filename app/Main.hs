@@ -12,39 +12,57 @@ import Structures
 import MyParser
 import Ast
 import Eval
+import Data.Word
+import OpCode
+import GLPInterface
+import Debug.Trace
+import Execute
 
 getFile :: [String] -> IO String
 getFile ([x]) = secureGetContent x <|> error
   where
     error = exitWith (ExitFailure 84)
 
-parseFileLine :: String -> Env -> IO Env
-parseFileLine content e = case parse content parseExpression of
+parseFileLine :: Options -> String -> Programm -> ParserConfig -> IO Programm
+parseFileLine o content e NullConfig = case parse content parseExpression of
   Left err -> putStrLn ("Error: " ++ show err) >> return e
-  Right expr -> do eval (createAst expr) e
+  Right expr -> executeProgramm o (createAst expr) e
+parseFileLine o content e parse = case parseWithConfig content parse of
+  Left err -> putStrLn ("Error: " ++ show err) >> return e
+  Right expr -> executeProgramm o (createAst expr) e
 
-parseFileWithStartEnv :: String -> Env -> IO Env
-parseFileWithStartEnv content e = case lines content of
+parseFileWithStartEnv :: Options -> String -> Programm -> ParserConfig -> IO Programm
+parseFileWithStartEnv o content e parse = case lines content of
     [] -> return e
     (x:xs) -> do
-      env <- parseFileLine x e
-      -- print env : If you want to print the environment after each line
-      parseFileWithStartEnv (unlines xs) env
+      env <- parseFileLine o x e parse
+      parseFileWithStartEnv o (unlines xs) env parse
 
-parseFile :: String -> IO Env
-parseFile content = parseFileWithStartEnv content emptyEnv
+parseFile :: Options -> String -> ParserConfig -> IO Programm
+parseFile o content parse = parseFileWithStartEnv o content emptyProgramm parse
 
-compiler :: String -> Env -> IO Env
-compiler str env = case parse str parseExpression of
+compiler :: String -> Programm -> Options -> ParserConfig -> IO Programm
+compiler str p o NullConfig = case parse str parseExpression of
   Left err -> do
     putStrLn $ "Error: " ++ show err
-    return env -- Return the current environment (or some default Env)
-  Right expr -> eval (createAst expr) env
+    return p
+  Right expr -> executeProgramm o (createAst expr) p
+compiler str p o c = case parseWithConfig str c of
+  Left err -> do
+    putStrLn $ "Error: " ++ show err
+    return p
+  Right expr -> executeProgramm o (createAst expr) p
+
+getConfigFile :: String -> IO ParserConfig
+getConfigFile "" = pure NullConfig
+getConfigFile x = loadParserConfiguration x
 
 choseMode :: Options -> IO ()
-choseMode (Options v c f) = case length f of
-  0 -> performCLI defaultPrompt emptyEnv compiler
-  _ -> getFile f >>= parseFile >> return ()
+choseMode (Options v cf f e c r) = case e of
+  False -> case length f of
+    0 -> getConfigFile cf >>= (\x -> performCLI defaultPrompt emptyProgramm compiler (Options v cf f e c r) x)
+    _ -> getFile f >>= (\x -> getConfigFile cf >>= (\y -> parseFile (Options v cf f e c r) x y)) >> return ()
+  True -> secureGetContent (head f) >>= executeVM
 
 main :: IO ()
 main = choseMode =<< getOptions

@@ -6,7 +6,7 @@ getContent :: String -> IO String
 getContent file = readFile file
 
 catch :: IOError -> IO String
-catch error = print error >> fail ""
+catch e = print e >> fail ""
 
 secureGetContent :: String -> IO String
 secureGetContent file = catchIOError (getContent file) catch

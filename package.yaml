@@ -23,6 +23,8 @@ dependencies:
 - base >= 4.7 && < 5
 - optparse-applicative
 - text
+- bytestring
+- containers
 
 ghc-options:
 - -Wall

@@ -1,4 +1,4 @@
-module ConditionConfig where
+module ParserConfig.Condition where
 
 import MyParser
 import Structures

@@ -8,13 +8,13 @@ import LispParser
 import Formatters
 import GLPUtils
 
-import BooleanConfig
-import OperatorConfig
-import ParametersConfig
-import ConditionConfig
-import VariableConfig
-import FunctionConfig
-import CallableConfig
+import ParserConfig.Boolean
+import ParserConfig.Operator
+import ParserConfig.Parameters
+import ParserConfig.Condition
+import ParserConfig.Variable
+import ParserConfig.Function
+import ParserConfig.Callable
 
 import Control.Applicative
 

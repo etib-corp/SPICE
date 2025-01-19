@@ -6,11 +6,10 @@ import Files
 import Lib
 import GLP
 
--- Parse a string with a given configuration. Mainly used for testing purposes.
-parseWithConfig :: String -> ParserConfig -> IO ()
-parseWithConfig s pc = case parse s (parseExpressionConfig pc) of
-      Left err -> putStrLn $ show err
-      Right result -> print result
+import Debug.Trace
+
+parseWithConfig :: String -> ParserConfig -> Either Error Expr
+parseWithConfig s pc = parse s (parseExpressionConfig pc)
 
 -- Check if the file has the right extension.
 isInGoodExtension :: String -> Bool

@@ -1,4 +1,4 @@
-module ParametersConfig where
+module ParserConfig.Parameters where
 
 import MyParser
 import Structures
