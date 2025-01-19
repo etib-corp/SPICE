@@ -8,7 +8,6 @@ import LispParser
 import Formatters
 import GLPUtils
 
-
 import ParserConfig.Boolean
 import ParserConfig.Operator
 import ParserConfig.Parameters

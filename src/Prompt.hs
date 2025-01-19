@@ -23,6 +23,7 @@ data CLI = Prompt { prompt :: String, history :: [Command], command :: Command }
 fillCLI :: Command -> CLI -> CLI
 fillCLI cmd (Prompt p h _) = Prompt p (h ++ [cmd]) cmd
 
+
 displayHelp :: IO ()
 displayHelp = putStrLn "HELP"
 

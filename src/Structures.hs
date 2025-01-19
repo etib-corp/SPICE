@@ -10,7 +10,6 @@ import Data.List (nubBy)
 import Data.Fixed (mod')
 import qualified Data.Map as Map
 
-
 -- | Type alias for the name of a variable or a function.
 type Name = String
 
@@ -46,6 +45,7 @@ data ParserConfig = ParserConfig {
   , parseFunction :: (Formatter, [String], [String])
   , parseCallable :: (Formatter, [String], String, [String])
   } | NullConfig
+
 
 instance Num Expr where
   (Integer i) + (Integer j) = Integer (i + j)

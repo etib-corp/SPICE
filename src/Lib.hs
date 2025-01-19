@@ -70,6 +70,7 @@ getUntilBackspace (x:xs)    | x == '\n' = []
 mapFilterByIndex :: [(a, b)] -> (a -> Bool) -> (a, b)
 mapFilterByIndex (x:[]) _ = x
 mapFilterByIndex ((k,v):xs) func    | func k = (k,v)
+                                    | otherwise = mapFilterByIndex xs func
 
 bytesToString :: [Word8] -> String
 bytesToString = map (toEnum . fromEnum)

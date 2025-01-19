@@ -5,6 +5,7 @@ import Structures
 import Files
 import Lib
 import GLP
+
 import Debug.Trace
 
 parseWithConfig :: String -> ParserConfig -> Either Error Expr
