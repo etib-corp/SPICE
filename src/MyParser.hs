@@ -8,14 +8,18 @@ import Lib
 
 import Control.Applicative
 import Control.Monad
+
 import Data.Functor.Identity
 import Data.List
 import Data.Char
-import Debug.Trace
 
 -- | Represents an error in the parsing process, including a message and
 -- the position in the input where the error occurred.
 data Error = Error { msg :: String, pos :: Int } deriving (Show)
+
+-- Ajouter l'instance Eq pour pouvoir comparer les erreurs dans les tests
+instance Eq Error where
+    (Error msg1 pos1) == (Error msg2 pos2) = msg1 == msg2 && pos1 == pos2
 
 -- | Represents the state of the parser, including the remaining input
 -- string and the current position.
@@ -58,7 +62,8 @@ instance Monad (ParsecT m) where
 
 -- MonadFail instance for 'ParsecT', supporting failure with a custom message.
 instance MonadFail (ParsecT m) where
-    fail message = ParsecT (\ s _ ko -> ko (Error message (position s)) s)
+    fail message = ParsecT
+        (\ s _ ko -> ko (Error (message ++ " !! Error occured here:-> '" ++ (getUntilBackspace (str s)) ++ "'. !!") (position s)) s)
 
 -- | A specialized type alias for parsers that do not involve additional monads.
 type Parser = ParsecT Identity
@@ -91,7 +96,7 @@ parseAnyChar = ParsecT $ \ s ok ko -> case uncons $ str s of
 -- | Parses a char only if it respects the condition passed as argument.
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy func = parseAnyChar >>=
-    (\ c -> if func c then pure c else fail "Char doesn't exist... but how ?")
+    (\ c -> if func c then pure c else fail ("Failed to satisfy needed char. Got: '" ++ [c] ++ "'."))
 
 -- | Parses a char only if it corresponds to the char given as argument.
 parseChar :: Char -> Parser Char
@@ -110,9 +115,15 @@ parseNoneOf s = satisfy (\ c -> not $ elem c s)
 parseString :: Parser String
 parseString = parseSomeUntil parseAnyChar (satisfy isWhiteSpace)
 
+parseString' :: Parser String
+parseString' = some (satisfy isAlpha)
+
 -- | Parses while it can parse with a separator parser given as parameter.
 parseSepBy :: Parser a -> Parser b -> Parser [a]
 parseSepBy p1 p2 = (:) <$> p1 <*> (many (p2 *> p1))
+
+parseSepBy' :: Parser a -> Parser b -> Parser [a]
+parseSepBy' p1 p2 = (:) <$> p1 <*> (some (p2 *> p1))
 
 -- | Parses with a first parser while it parses using the second parser given as argument.
 parseManyUntil :: Parser a -> Parser b -> Parser [a]
@@ -130,14 +141,14 @@ parseWhiteSpaces = void $ many $ satisfy (isSpace)
 parseInt :: Parser Int
 parseInt = check >>= \ s ->
     case getInt s of
-        Nothing -> fail "Invalid signed number"
+        Nothing -> fail ("Invalid signed number, here is your number: '" ++ s ++ "'.")
         Just x -> pure x
     where
-        check = (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <|> some (satisfy isDigit)
+        check = ((fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <|> some (satisfy isDigit)) <|> fail ("Invalid signed number.")
 
 -- | Parses only unsigned integers from a string.
 parseUInt :: Parser Int
-parseUInt = some (satisfy isDigit) >>= \ s ->
+parseUInt = (some (satisfy isDigit) <|> fail "Invalid unsigned number") >>= \ s ->
     case getInt s of
         Nothing -> fail "Invalid unsigned number"
         Just x -> pure x
@@ -145,7 +156,7 @@ parseUInt = some (satisfy isDigit) >>= \ s ->
 -- | Parses only if it corresponds to the string given as parameter.
 parseGivenString :: String -> Parser String
 parseGivenString "" = pure ""
-parseGivenString s = fmap (:) (parseChar (head s)) <*> parseGivenString (tail s)
+parseGivenString s = (fmap (:) (parseChar (head s)) <*> parseGivenString (tail s)) <|> fail ("String does not match. Expected: '" ++ s ++ "'.")
 
 -- | Parses only double value.
 parseDouble :: Parser Double
@@ -154,4 +165,8 @@ parseDouble = check >>= \ s ->
         Nothing -> fail "Invalid float"
         Just x -> pure x
     where
-        check = fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)
+        check = (fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)) <|> fail "Invalid float."
+
+-- | Parses a string in quotes. ("toto" -> toto)
+parseStringInQuotes :: Parser String
+parseStringInQuotes = parseChar '"' *> parseManyUntil parseAnyChar (satisfy (== '"'))

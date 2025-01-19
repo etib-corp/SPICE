@@ -11,67 +11,75 @@ import Data.Functor
 import Structures
 
 -- | Parses only basic operators like (+, -, *, /, =) and returns it as a generic Expression.
-parseOperator :: Parser Expr
-parseOperator = fmap Operator (parseGivenString "+" <|>
+parseOperatorLisp :: Parser Expr
+parseOperatorLisp = fmap Operator (parseGivenString "+" <|>
                                parseGivenString "-" <|>
                                parseGivenString "=" <|>
                                parseGivenString "/" <|>
-                               parseGivenString "*" <|> fail "Failed to parse operator")
+                               parseGivenString "*" <|>
+                               fail "Failed to parse operator")
+
+
+-- | Parses a lisp builtin variable and returns it as a generic Expression.
+parseBooleanLisp :: Parser Expr
+parseBooleanLisp = fmap Integer (parseGivenString "#t" $> 1 <|> parseGivenString "#f" $> 0 <|> fail "Failed to parse boolean. ")
 
 -- | Parses left parenthesis with arounding whitespaces.
 parseLeftParenthesis :: Parser ()
-parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+parseLeftParenthesis = void $ (parseWhiteSpaces *> parseGivenString "(" <* parseWhiteSpaces)
 
 -- | Parses right parenthesis with arounding whitespaces.
 parseRightParenthesis :: Parser ()
-parseRightParenthesis = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces) <|> fail "Failed to parse Parenthesis"
+parseRightParenthesis = void $ (parseWhiteSpaces *> parseGivenString ")" <* parseWhiteSpaces)
 
 -- | Parses a lisp integer and returns it as a generic Expression.
 parseInteger :: Parser Expr
 parseInteger = fmap Integer (parseInt <|> fail "Failed to parse Integer")
 
 -- | Parses a lisp float and returns it as a generic Expression.
-parseFloat :: Parser Expr
-parseFloat = fmap Float (parseDouble <|> fail "Failed to parse Float")
+parseFloatLisp :: Parser Expr
+parseFloatLisp = fmap Float (parseDouble <|> fail "Failed to parse Float")
 
 -- | Parses a lisp arithmetic operation and returns it as a generic Expression.
-parseArithmeticOp :: Parser Expr
-parseArithmeticOp = parseLeftParenthesis *> parseArithmeticExpr <* parseRightParenthesis
+parseArithmeticOpLisp :: Parser Expr
+parseArithmeticOpLisp = parseLeftParenthesis *> parseArithmeticExpr <* parseRightParenthesis
 
 -- | Parses a lisp arithmetic expression and returns it as a generic Expression.
 parseArithmeticExpr :: Parser Expr
 parseArithmeticExpr = ArithmeticOp
-    <$> (parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*" <|> parseGivenString "/")
-    <*> (parseWhiteSpaces *> parseExpression)
-    <*> (parseWhiteSpaces *> parseExpression)
+    <$> ((parseGivenString "+" <|> parseGivenString "-" <|> parseGivenString "*"
+        <|> parseGivenString "/" <|> parseGivenString "eq?" <|> parseGivenString "define" <|> parseGivenString "div" <|> parseGivenString "mod" <|> parseGivenString "<") <|> fail "Invalid declaration. Expected: [+, -, *, /, eq?, define].")
+    <*> parseExpr
+    <*> parseExpr
+    where
+        parseExpr = ((parseWhiteSpaces *> (parseExpression <|> parseVarLisp)) <|> fail ("Invalid call or expression. Expected a variable name or a Lisp expression."))
 
 -- | Parses a lisp function and returns it as a generic Expression.
-parseFunction :: Parser Expr
-parseFunction = Function
-    <$> (parseGivenString "define" *> parseLeftParenthesis *> parseName <* parseWhiteSpaces)
+parseFunctionLisp :: Parser Expr
+parseFunctionLisp = Function
+    <$> (parseLeftParenthesis *> parseGivenString "define" *> parseLeftParenthesis *> parseName <* parseWhiteSpaces)
     <*> (parseWhiteSpaces *> (parseSepBy parseName parseWhiteSpaces <|> pure []) <* parseWhiteSpaces <* parseRightParenthesis)
-    <*> (parseWhiteSpaces *> parseExpression)
+    <*> (parseWhiteSpaces *> parseExpression <* parseRightParenthesis)
 
 -- | Parses a lisp callable object and returns it as a generic Expression.
-parseCallable :: Parser Expr
-parseCallable = parseLeftParenthesis *> parseCallableExpr <* parseRightParenthesis
+parseCallableLisp :: Parser Expr
+parseCallableLisp = parseLeftParenthesis *> parseCallableExpr <* parseRightParenthesis
 
 -- | Parses a lisp callable expression and returns it as a generic Expression.
 parseCallableExpr :: Parser Expr
 parseCallableExpr = Callable
     <$> parseName
     <*> (parseWhiteSpaces
-        *> (parseSepBy parseExpression parseWhiteSpaces <|> pure [])
+        *> (parseSepBy (parseExpression <|> parseVarLisp) parseWhiteSpaces <|> pure [])
         <* parseWhiteSpaces)
 
 -- | Parses a lisp variable and returns it as a generic Expression.
-parseVar :: Parser Expr
-parseVar = fmap Var ((parseGivenString "define" *> parseWhiteSpaces *> parseString) <|>
-                      fail "Failed to parse Variable")
+parseVarLisp :: Parser Expr
+parseVarLisp = fmap Var (parseName <|> fail "Invalid variable name")
 
 -- | Parses a lisp list and returns it as a generic Expression.
-parseList :: Parser Expr
-parseList = parseLeftParenthesis *> parseListExpr <* parseRightParenthesis
+parseListLisp :: Parser Expr
+parseListLisp = parseLeftParenthesis *> parseListExpr <* parseRightParenthesis
 
 -- | Parses a lisp list expression and returns it as a generic Expression.
 parseListExpr :: Parser Expr
@@ -80,18 +88,18 @@ parseListExpr = fmap List ((parseGivenString "list" *> parseWhiteSpaces *>
                        fail "Failed to parse List")
 
 -- | Parses a lisp list if and returns it as a generic Expression.
-parseIf :: Parser Expr
-parseIf = If <$> parseStart <*> (parseWhiteSpaces *> parseString) <*> parseExpr <*> parseExpr
+parseIfLisp :: Parser Expr
+parseIfLisp = If <$> parseStart <*> (parseWhiteSpaces *> parseExpression) <*> parseExpr
     where
-        parseStart = (parseGivenString "if" *> parseWhiteSpaces *> parseExpression)
-        parseExpr = (parseWhiteSpaces *> parseExpression)
+        parseStart = (parseLeftParenthesis *> parseGivenString "if" *> parseWhiteSpaces *> parseExpression)
+        parseExpr = (parseWhiteSpaces *> parseExpression <* parseRightParenthesis)
 
 -- | Parses a lisp expression, only used for debugging.
-parseLispExpressionTest :: Parser Expr
-parseLispExpressionTest = parseLeftParenthesis *> parseExpression <* parseRightParenthesis
+-- parseLispExpressionTest :: Parser Expr
+-- parseLispExpressionTest = parseManyUntil (parseWhiteSpaces *> parseExpression *> parseWhiteSpaces)
 
 -- | Parses a lisp expression and returns it as a generic Expression.
 parseExpression :: Parser Expr
-parseExpression = parseArithmeticOp <|> parseVar <|> parseInteger <|>
-                  parseList <|> parseFloat <|> parseOperator <|>
-                  parseFunction <|> parseCallable <|> parseIf
+parseExpression = parseFunctionLisp <|> parseArithmeticOpLisp <|> parseBooleanLisp <|> parseInteger <|>
+                  parseListLisp <|> parseFloatLisp <|> parseOperatorLisp <|> (parseIfLisp <|>
+                  parseCallableLisp) <|> parseVarLisp

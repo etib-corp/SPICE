@@ -5,96 +5,200 @@ import Control.Monad (foldM)  -- Import foldM to handle monads
 import System.Exit
 import Control.Applicative
 import Ast
+import OpCode
+import Debug.Trace
+import Data.Word
+import OptParser
+import Lib
+import Programm
+import qualified Data.Map as Map
+import DumpFile
 
-pushEnv :: Expr -> Expr -> Env -> Env
-pushEnv k v e = e <> Env [(k, v)]
+import Debug.Trace (trace)
 
-getInEnv :: Expr -> Env -> Maybe Expr
-getInEnv k (Env []) = Nothing
-getInEnv k (Env ((k', v):xs)) | k == k' = Just v
-                              | otherwise = getInEnv k (Env xs)
+getInstruction :: AST Expr -> [BasicBlock] -> Either String [Instruction]
+getInstruction (Node (Operator "=") ((Node (Var v) []):e2:[])) e =
+  case (e2) of
+    (Node (Integer i) []) -> Right $ [Set v (IntValue i)]
+    _ -> case getInstruction e2 e of
+      Right i -> Right $ i ++ [Set v (PopValue)]
+      Left err -> Left err
+getInstruction (Node (Operator "define") ((Node (Var v) []):e2:[])) e =
+  case (e2) of
+    (Node (Integer i) []) -> Right $ [Set v (IntValue i)]
+    _ -> case getInstruction e2 e of
+      Right i -> Right $ i ++ [Set v (PopValue)]
+      Left err -> Left err
+getInstruction (Node (Integer i) []) _ = Right $ [PushInt i]
+-- getInstructions (Node (Float f) []) _ = Right $ PushFloat f
+getInstruction (Node (Var v) []) e = Right $ [Get v]
+getInstruction (Node (Operator "+") (e1:e2:[])) e =
+  case (getInstruction e1 e, getInstruction e2 e) of
+    (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Add]
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+getInstruction (Node (Operator "-") (e1:e2:[])) e =
+  case (getInstruction e1 e, getInstruction e2 e) of
+    (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Sub]
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+getInstruction (Node (Operator "*") (e1:e2:[])) e =
+  case (getInstruction e1 e, getInstruction e2 e) of
+    (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Mul]
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+getInstruction (Node (Statement "if") (c:t:e:[])) p =
+  case (getInstruction c p, getInstruction t p, getInstruction e p) of
+    (Right c', Right t', Right e') -> Right $ c' ++ [JumpIf ((length t') + 1)] ++ t' ++ [Jump (length e' + 1)]  ++ e'
+    (Left err, _, _) -> Left err
+    (_, Left err, _) -> Left err
+    (_, _, Left err) -> Left err
+getInstruction (Node (Operator "eq?") (e1:e2:[])) e =
+  case (getInstruction e1 e, getInstruction e2 e) of
+    (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Eq]
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+getInstruction (Node (Operator "<") (e1:e2:[])) e =
+  case (getInstruction e1 e, getInstruction e2 e) of
+    (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Less]
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+getInstruction (Node (List  []) l) e = foldM (\acc x -> getInstruction x e >>= \newI -> return (acc ++ newI)) [] l
+getInstruction (Node (Call s) [Node (List argNodes) []]) e =
+  case createInstructionsFunction argNodes e of
+    Right i -> Right $ [CallFunc s i]
+    Left err -> Left err
 
-baseOp :: Expr -> Expr -> (Expr -> Expr -> Expr) -> Env -> Maybe Expr
-baseOp e1 e2 op env = case (e1, e2) of
-  (Integer i1, Integer i2) -> Just (op e1 e2)
-  (Float f1, Float f2) -> Just (op e1 e2)
-  (Integer i, Float f) -> Just (op e1 e2)
-  (Float f, Integer i) -> Just (op e1 e2)
-  (Var v, Integer i) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Just (op (Integer i') e2)
-    Just (Float f') -> Just (op (Float f') e2)
-    _ -> Nothing
-  (Integer i, Var v) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Just (op e1 (Integer i'))
-    Just (Float f') -> Just (op e1 (Float f'))
-    _ -> Nothing
-  (Var v1, Var v2) -> case (getInEnv (Var v1) env, getInEnv (Var v2) env) of
-    (Just e1', Just e2') -> baseOp e1' e2' op env
-    (_, _) -> Nothing
-  (Var v, Float f) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Just (op (Integer i') e2)
-    Just (Float f') -> Just (op (Float f') e2)
-    _ -> Nothing
-  (Float f, Var v) -> case getInEnv (Var v) env of
-    Just (Integer i') -> Just (op e1 (Integer i'))
-    Just (Float f') -> Just (op e1 (Float f'))
-    _ -> Nothing
-  _ -> Nothing
+createInstructionsFunction :: [Expr] -> [BasicBlock] -> Either String [[Instruction]]
+createInstructionsFunction [] _ = Right []
+createInstructionsFunction (x:xs) e = case getInstruction (createAst x) e of
+  Right i -> case createInstructionsFunction xs e of
+    Right is -> Right $ i : is
+    Left err -> Left err
+  Left err -> Left err
 
-getExpr :: AST Expr -> Env -> Expr
-getExpr (Node (Integer i) []) _ = Integer i
-getExpr (Node (Float f) []) _ = Float f
-getExpr (Node (Var v) []) _ = Var v
-getExpr (Node (Operator "+") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (+) e of
-  Just e' -> e'
-  Nothing -> ArithmeticOp "+" (getExpr e1 e) (getExpr e2 e)
-getExpr (Node (Operator "-") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (-) e of
-  Just e' -> e'
-  Nothing -> ArithmeticOp "-" (getExpr e1 e) (getExpr e2 e)
-getExpr (Node (Operator "*") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (*) e of
-  Just e' -> e'
-  Nothing -> ArithmeticOp "*" (getExpr e1 e) (getExpr e2 e)
-getExpr (Node (Operator "div") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) (/) e of
-  Just e' -> e'
-  Nothing -> ArithmeticOp "div" (getExpr e1 e) (getExpr e2 e)
-getExpr (Node (Operator "mod") (e1:e2:[])) e = case baseOp (getExpr e1 e) (getExpr e2 e) mod e of
-  Just e' -> e'
-  Nothing -> ArithmeticOp "mod" (getExpr e1 e) (getExpr e2 e)
-getExpr (Node (Declarator s) []) e = Declarator s
-getExpr (Node (List l) []) e = List (l)
+walker2 :: AST Expr -> Programm -> Either String Programm
+walker2 (Node (Var v) []) p = Right (p { instructionsP = instructionsP p ++ [Get v] })
+walker2 (Node (Operator "=") ((Node (Var v) []):e2:[])) p =
+  case (e2) of
+    (Node (Integer i) []) -> Right (p { instructionsP = instructionsP p ++ [Set v (IntValue i)] })
+    _ -> case getInstruction e2 (blocks p) of
+      Right i -> Right $ p { instructionsP = instructionsP p ++ i ++ [Set v (PopValue)] }
+      Left err -> Left err
+walker2 (Node (Operator "define") ((Node (Var v) []):e2:[])) p =
+  case (e2) of
+    (Node (Integer i) []) -> Right (p { instructionsP = instructionsP p ++ [Set v (IntValue i)] })
+    _ -> case getInstruction e2 (blocks p) of
+      Right i -> Right $ p { instructionsP = instructionsP p ++ i ++ [Set v (PopValue)] }
+      Left err -> Left err
+walker2 (Node (Operator "+") (e1:e2:[])) p =
+  case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
+    (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i2 ++ i2 ++ [Add] }
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+walker2 (Node (Operator "-") (e1:e2:[])) p =
+  case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
+    (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i1 ++ i2 ++ [Sub] }
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+walker2 (Node (Operator "*") (e1:e2:[])) p =
+  case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
+    (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i1 ++ i2 ++ [Mul] }
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+walker2 (Node (Statement "if") (c:t:e:[])) p =
+  case (getInstruction c (blocks p), getInstruction t (blocks p), getInstruction e (blocks p)) of
+    (Right c', Right t', Right e') -> Right $ p { instructionsP = instructionsP p ++ c' ++ [JumpIf ((length t') + 1)] ++ t' ++ [Jump (length e' + 1)]  ++ e' }
+    (Left err, _, _) -> Left err
+    (_, Left err, _) -> Left err
+    (_, _, Left err) -> Left err
+walker2 (Node (Operator "eq?") (e1:e2:[])) p =
+  case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
+    (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i1 ++ i2 ++ [Eq] }
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+walker2 (Node (Operator "<") (e1:e2:[])) p =
+  case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
+    (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i1 ++ i2 ++ [Less] }
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+walker2 (Node (List  []) l) p = foldM (\acc x -> walker2 x acc >>= \newP -> return newP) p l
+walker2 (Node (Declarator s) (var:exp:[])) p =
+  case getBasicBlocks s (blocks p) of
+    Just bb -> Left ("*** ERROR : " ++ s ++ " already exists.")
+    Nothing -> case getInstruction exp (blocks p) of
+      Right i -> case var of
+        (Node (List vars) []) -> Right $ p { blocks = blocks p ++ [BasicBlock s i (fmap (\(Var v) -> v) vars)] }
+        _ -> Left ("*** ERROR : " ++ show var ++ " is not a list.") >> return p
+      Left err -> Left err
+walker2 (Node (Call "print") [Node (List argNodes) []]) p =
+  case length argNodes of
+    1 -> case createInstructionsFunction argNodes (blocks p) of
+      Right i -> Right $ p { instructionsP = instructionsP p ++ head i ++ [Print] }
+      Left err -> Left err
+    _ -> Left "print only accepts one argument."
+walker2 (Node (Call s) [Node (List argNodes) []]) p =
+  case createInstructionsFunction argNodes (blocks p) of
+    Right i -> Right $ p { instructionsP = instructionsP p ++ [CallFunc s i] }
+    Left err -> Left err
 
-createStack :: [Expr] -> [Expr] -> Env -> Env
-createStack [] [] env = env
-createStack (x:xs) (y:ys) env = createStack xs ys (pushEnv y (getExpr (createAst x) env) env)
+execute :: [Instruction] -> VM -> VM
+execute [] vm = vm
+execute (op:ops) vm =
+  case op of
+    Set name (IntValue n) ->
+      execute ops vm { envBackend = Map.insert name n (envBackend vm) }
+    PushInt n ->
+      execute ops vm { stack = n : stack vm }
+    Set name PopValue ->
+      case stack vm of
+        (x:xs) -> execute ops vm { stack = xs, envBackend = Map.insert name x (envBackend vm) }
+        _ -> error "Stack underflow on Set"
+    Get name ->
+      case Map.lookup name (envBackend vm) of
+        Just value -> execute ops vm { stack = value : stack vm }
+        Nothing -> error $ "Variable not found: " ++ name
+    Add ->
+      case stack vm of
+        (x:y:xs) -> execute ops vm { stack = (y + x) : xs }
+        _ -> error "Stack underflow on Add"
+    Sub ->
+      case stack vm of
+        (x:y:xs) -> execute ops vm { stack = (y - x) : xs }
+        _ -> error "Stack underflow on Sub"
+    Print ->
+      case stack vm of
+        (x:xs) -> trace (show x) $ execute ops vm { stack = xs }
+        _ -> error "Stack underflow on Print"
+    PrintStack ->
+        trace ("Stack -> " ++ show (stack vm)) $ execute ops vm
+    Jump n ->
+      let remainingOps = drop n (op:ops)
+       in execute remainingOps vm
+    JumpIf n ->
+      case stack vm of
+        (x:xs) ->
+          if x == 0
+            then let remainingOps = drop (n + 1) (op:ops)
+                  in execute remainingOps vm { stack = xs }
+            else execute ops vm { stack = xs }
+        [] -> error "Stack underflow on JumpIf"
 
-walker :: AST Expr -> Env -> IO Env
-walker (Node (Integer i) []) e = return e
-walker (Node (Float f) []) e = return e
-walker (Node (Var v) []) e = do
-  let v' = getInEnv (Var v) e
-  case v' of
-    Just v'' -> print v'' >> return e
-    Nothing -> putStrLn ("*** ERROR : variable " ++ v ++" is not bound.") >> return e
-walker (Node (Operator "=") (e1:e2:[])) env = return . pushEnv (getExpr e1 env) (getExpr e2 env) $ env
-walker (Node (Operator "+") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (+) env) >> return env
-walker (Node (Operator "div") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (/) env) >> return env
-walker (Node (Operator "-") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (-) env) >> return env
-walker (Node (Operator "mod") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) mod env) >> return env
-walker (Node (Operator "*") (e1:e2:[])) env = print (baseOp (getExpr e1 env) (getExpr e2 env) (*) env) >> return env
-walker (Node (List []) l) e = foldM (\acc x -> walker x acc >>= \newEnv -> return (acc <> newEnv)) e l
-walker (Node (Declarator s) (var:exp:[])) e = return . pushEnv (Declarator s) (List [getExpr var e, getExpr exp e]) $ e
-walker (Node (Call s) [Node (List argNodes) []]) env =
-  case getInEnv (Declarator s) env of
-    Just (List [List vars, exp]) -> case length argNodes == length vars of
-      True -> execute exp (createStack argNodes vars env) >> return env
-      False -> putStrLn ("*** ERROR : function " ++ s ++ " expects " ++ show (length vars) ++
-                         " arguments, but " ++ show (length argNodes) ++ " were given.") >> return env
-    Nothing -> putStrLn ("*** ERROR : function " ++ s ++ " is not bound.") >> return env
-  where
-    -- Correct spelling and define `execute`
-    execute :: Expr -> Env -> IO Env
-    execute e env = walker (createAst e) env
-walker _ e = return e
 
-eval :: AST Expr -> IO Env
-eval ast = walker ast (Env [])
+eval :: Options -> Programm -> IO Programm
+eval (Options _ _ _ _ True r) (Programm b e i) = case instructionsToOpCode2 i b of
+    Left c -> printRepresenation c >> writeProgramm c (Programm b e i) >> return (Programm b e i)
+    Right err -> putStrLn err >> return (Programm b e [])
+    where printRepresenation c = case r of
+            True -> print (opCodesToInstructions c) >> print c
+            False -> return ()
+eval (Options _ _ _ _ False r) p = case programmEval p [] of
+  Right (p, s) -> case popStack s of
+    Just (ValueInt i, s') -> putStrLn (show i) >> return p
+    _ -> return p
+  Left m -> print m >> return p
+
+executeProgramm :: Options -> AST Expr -> Programm -> IO Programm
+executeProgramm o ast p = case walker2 ast p of
+  Right p -> writeFile "out.bin" "" >> eval o p
+  Left err -> putStrLn err >> return p

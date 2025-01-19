@@ -26,12 +26,29 @@ source-repository head
 library
   exposed-modules:
       Ast
+      DumpFile
+      Eval
+      Execute
+      Files
+      Formatters
+      GLP
+      GLPInterface
+      GLPUtils
       Lib
       LispParser
       MyParser
-      NewParser
-      Structures
+      OpCode
+      OptParser
+      ParserConfig.Boolean
+      ParserConfig.Callable
+      ParserConfig.Condition
+      ParserConfig.Function
+      ParserConfig.Operator
+      ParserConfig.Parameters
+      ParserConfig.Variable
+      Programm
       Prompt
+      Structures
   other-modules:
       Paths_spice
   autogen-modules:
@@ -41,7 +58,9 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
-    , parsec
+    , bytestring
+    , containers
+    , optparse-applicative
     , text
   default-language: Haskell2010
 
@@ -56,7 +75,9 @@ executable spice-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , parsec
+    , bytestring
+    , containers
+    , optparse-applicative
     , spice
     , text
   default-language: Haskell2010
@@ -65,6 +86,13 @@ test-suite spice-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      TestAst
+      TestFiles
+      TestLib
+      TestMyParser
+      TestNewParser
+      TestOptParser
+      TestStructures
       Paths_spice
   autogen-modules:
       Paths_spice
@@ -72,8 +100,13 @@ test-suite spice-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , parsec
+      HUnit
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , optparse-applicative
+    , silently
     , spice
+    , temporary
     , text
   default-language: Haskell2010
