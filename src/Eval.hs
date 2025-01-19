@@ -63,6 +63,11 @@ getInstruction (Node (Operator "<") (e1:e2:[])) e =
     (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Less]
     (Left err, _) -> Left err
     (_, Left err) -> Left err
+getInstruction (Node (Operator ">") (e1:e2:[])) e =
+  case (getInstruction e1 e, getInstruction e2 e) of
+    (Right i1, Right i2) -> Right $ i1 ++ i2 ++ [Greater]
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
 getInstruction (Node (List  []) l) e = foldM (\acc x -> getInstruction x e >>= \newI -> return (acc ++ newI)) [] l
 getInstruction (Node (Call s) [Node (List argNodes) []]) e =
   case createInstructionsFunction argNodes e of
@@ -120,6 +125,11 @@ walker2 (Node (Operator "eq?") (e1:e2:[])) p =
 walker2 (Node (Operator "<") (e1:e2:[])) p =
   case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
     (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i1 ++ i2 ++ [Less] }
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err
+walker2 (Node (Operator ">") (e1:e2:[])) p =
+  case (getInstruction e1 (blocks p), getInstruction e2 (blocks p)) of
+    (Right i1, Right i2) -> Right $ p { instructionsP = instructionsP p ++ i1 ++ i2 ++ [Greater] }
     (Left err, _) -> Left err
     (_, Left err) -> Left err
 walker2 (Node (List  []) l) p = foldM (\acc x -> walker2 x acc >>= \newP -> return newP) p l
