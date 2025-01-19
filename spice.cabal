@@ -26,13 +26,27 @@ source-repository head
 library
   exposed-modules:
       Ast
+      DumpFile
       Eval
+      Execute
       Files
+      Formatters
+      GLP
+      GLPInterface
+      GLPUtils
       Lib
       LispParser
       MyParser
-      NewParser
+      OpCode
       OptParser
+      ParserConfig.Boolean
+      ParserConfig.Callable
+      ParserConfig.Condition
+      ParserConfig.Function
+      ParserConfig.Operator
+      ParserConfig.Parameters
+      ParserConfig.Variable
+      Programm
       Prompt
       Structures
   other-modules:
@@ -44,6 +58,8 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , containers
     , optparse-applicative
     , text
   default-language: Haskell2010
@@ -59,6 +75,8 @@ executable spice-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , containers
     , optparse-applicative
     , spice
     , text
@@ -84,6 +102,8 @@ test-suite spice-test
   build-depends:
       HUnit
     , base >=4.7 && <5
+    , bytestring
+    , containers
     , optparse-applicative
     , silently
     , spice
