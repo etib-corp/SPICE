@@ -20,4 +20,6 @@ writeFunctionsInFile (x:xs) b = case (instructionsToOpCode2 (instructions x) b) 
     writeInt i = bytesToString (intToBytes i)
 
 writeProgramm :: [Word8] -> Programm -> IO ()
-writeProgramm c (Programm b e i) = appendFile "out.bin" (bytesToString (intToBytes (length b))) >> writeFunctionsInFile b b >>  appendFile "out.bin" (bytesToString c)
+writeProgramm c (Programm b e i) =
+  writeFile "out.bin" (bytesToString [0x53, 0x50, 0x49, 0x43, 0x45, 0x47, 0x4C, 0x41]) >>
+  appendFile "out.bin" (bytesToString (intToBytes (length b))) >> writeFunctionsInFile b b >>  appendFile "out.bin" (bytesToString c)

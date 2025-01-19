@@ -62,7 +62,7 @@ choseMode (Options v cf f e c r) = case e of
   False -> case length f of
     0 -> getConfigFile cf >>= (\x -> performCLI defaultPrompt emptyProgramm compiler (Options v cf f e c r) x)
     _ -> getFile f >>= (\x -> getConfigFile cf >>= (\y -> parseFile (Options v cf f e c r) x y)) >> return ()
-  True -> secureGetContent (head f) >>= executeVM
+  True -> secureGetContent (head f) >>= executeVM (head f)
 
 main :: IO ()
 main = choseMode =<< getOptions
