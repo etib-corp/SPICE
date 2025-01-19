@@ -68,6 +68,9 @@ programmEval (Programm b e (LessEq:xs)) s = case arithmeticOpEval (\ x y -> from
 programmEval (Programm b e (Eq:xs)) s = case arithmeticOpEval (\ x y -> fromEnum (x == y)) s of
     Just s' -> programmEval (Programm b e xs) s'
     _ -> Left "Invalid operation =="
+programmEval (Programm b e (Greater:xs)) s = case arithmeticOpEval (\ x y -> fromEnum (x > y)) s of
+    Just s' -> programmEval (Programm b e xs) s'
+    _ -> Left "Invalid operation >"
 programmEval (Programm b e (JumpIf j:xs)) s = case popStack s of
   Just (ValueInt i, s') -> case i of
     0 -> programmEval (Programm b e (drop j xs)) s'
