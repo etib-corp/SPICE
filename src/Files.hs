@@ -1,12 +1,19 @@
-module Files (secureGetContent) where
+module Files (secureGetContent, secureGetContentBS) where
 
+import qualified Data.ByteString as BS
 import System.IO.Error
 
 getContent :: String -> IO String
 getContent file = readFile file
 
-catch :: IOError -> IO String
-catch error = print error >> fail ""
+catchString :: IOError -> IO String
+catchString e = print e >> fail ""
+
+catchBS :: IOError -> IO BS.ByteString
+catchBS e = print e >> fail ""
 
 secureGetContent :: String -> IO String
-secureGetContent file = catchIOError (getContent file) catch
+secureGetContent file = catchIOError (getContent file) catchString
+
+secureGetContentBS :: String -> IO BS.ByteString
+secureGetContentBS file = catchIOError (BS.readFile file) catchBS

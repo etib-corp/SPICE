@@ -1,4 +1,4 @@
-module BooleanConfig where
+module ParserConfig.Boolean where
 
 import MyParser
 import Structures

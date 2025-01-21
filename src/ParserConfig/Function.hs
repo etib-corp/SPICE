@@ -1,4 +1,4 @@
-module FunctionConfig where
+module ParserConfig.Function where
 
 import MyParser
 import Structures

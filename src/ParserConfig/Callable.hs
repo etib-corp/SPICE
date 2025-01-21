@@ -1,4 +1,4 @@
-module CallableConfig where
+module ParserConfig.Callable where
 
 import MyParser
 import Structures

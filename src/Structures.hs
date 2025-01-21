@@ -8,6 +8,7 @@ import Control.Monad
 
 import Data.List (nubBy)
 import Data.Fixed (mod')
+import qualified Data.Map as Map
 
 -- | Type alias for the name of a variable or a function.
 type Name = String
@@ -30,7 +31,7 @@ data Expr
   | ArithmeticOp Name Expr Expr
   | List [Expr]
   | If Expr Expr Expr
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -- | Data type for the parser configuration. It contains the different parsers for the different types of expressions.
 data ParserConfig = ParserConfig {
@@ -44,6 +45,7 @@ data ParserConfig = ParserConfig {
   , parseFunction :: (Formatter, [String], [String])
   , parseCallable :: (Formatter, [String], String, [String])
   } | NullConfig
+
 
 instance Num Expr where
   (Integer i) + (Integer j) = Integer (i + j)
@@ -89,18 +91,18 @@ instance Integral Expr where
   (Float i) `mod` (Integer j) = Float (i `mod'` fromIntegral j)
   (Float i) `mod` (Float j) = Float (i `mod'` j)
 
-instance Show Expr where
-  show (Integer i) = show i
-  show (Float f) = show f
-  show (Var v) = v
-  show (Operator o) = o
-  show (List l) = show l
-  show (ArithmeticOp o e1 e2) = show e1 ++ " " ++ show o ++ " " ++ show e2
-  show (Function n args e) = n ++ "(" ++ unwords args ++ ") = " ++ show e
-  show (If c t e) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e
-  show (Callable n args) = n ++ "(" ++ unwords (map show args) ++ ")"
-  show (Declarator n) = n
-  show (Call n) = n
+-- instance Show Expr where
+--      show (Integer i) = show i
+--      show (Float f) = show f
+--      show (Var v) = v
+--      show (Operator o) = o
+--      show (List l) = show l
+--      show (ArithmeticOp o e1 e2) = show e1 ++ " " ++ show o ++ " " ++ show e2
+--      show (Function n args e) = n ++ "(" ++ unwords args ++ ") = " ++ show e
+--      show (If c t e) = "if " ++ show c ++ " then " ++ show t ++ " else " ++ show e
+--      show (Callable n args) = n ++ "(" ++ unwords (map show args) ++ ")"
+--      show (Declarator n) = n
+--      show (Call n) = n
 
 data AST a = Empty | Node a [AST a]
 
@@ -118,18 +120,72 @@ instance Functor AST where
   fmap f Empty = Empty
   fmap f (Node a xs) = Node (f a) (map (fmap f) xs)
 
-data Env = Env { variables :: [(Expr, Expr)] } deriving (Show)
+data Value = IntValue Int | PopValue deriving (Show, Eq)
 
-instance Eq Env where
-    (Env xs) == (Env ys) = xs == ys
+data Instruction
+  = PushInt Int
+  | Get Name
+  | Eq
+  | NEq
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | Mod
+  | Less
+  | LessEq
+  | Greater
+  | GreaterEq
+  | Print
+  | PrintStack
+  | Jump Int
+  | JumpIf Int
+  | JumpIfNot Int
+  | Pop
+  | PopN Int
+  | None
+  | Return
+  | CallFunc Name [[Instruction]]
+  | Set Name Value
+  deriving (Show, Eq)
 
-instance Semigroup Env where
-  Env xs <> Env ys = Env (removeDuplicates (ys ++ xs))
-    where
-      removeDuplicates = nubBy (\(k1, _) (k2, _) -> k1 == k2)
+data BasicBlock
+ = BasicBlock { name :: Name
+              , instructions :: [Instruction]
+              , params :: [Name]
+              } deriving (Show)
 
-instance Monoid Env where
+data Env a b = Env { variables :: [(a, b)] } deriving (Show, Eq)
+
+
+instance Eq a => Semigroup (Env a b) where
+  Env xs <> Env ys = Env (nubBy (\(a, _) (b, _) -> a == b) (xs ++ ys))
+
+instance Eq a => Monoid (Env a b) where
   mempty = Env []
 
-emptyEnv :: Env
+emptyEnv :: Env String Int
 emptyEnv = Env []
+
+emptyProgramm :: Programm
+emptyProgramm = Programm [] emptyEnv []
+
+data Programm = Programm { blocks :: [BasicBlock], envP :: Env String Int  , instructionsP :: [Instruction] } deriving (Show)
+
+instance Semigroup Programm where
+  Programm xs env1 is1 <> Programm ys env2 is2 = Programm (xs ++ ys) (env1 <> env2) (is1 ++ is2)
+
+
+type StackBackend = [Int]
+type EnvBackend = Map.Map String Int
+
+data VM = VM
+  { stack :: StackBackend,
+    envBackend :: EnvBackend
+  } deriving (Show)
+
+emptyBasicBlock :: BasicBlock
+emptyBasicBlock = BasicBlock "" [] []
+
+emptyVm :: VM
+emptyVm = VM { stack = [], envBackend = Map.empty }

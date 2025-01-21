@@ -10,10 +10,13 @@ module Lib
     , getUntilBackspace
     , getUntilChar
     , mapFilterByIndex
+    , bytesToString
+    , convertToWord
     ) where
 
 import Data.Text (pack)
 import Data.Text.Read (double)
+import Data.Word (Word8)
 
 -- | Returns an integer extracted from the given string.
 getInt :: String -> Maybe Int
@@ -37,7 +40,7 @@ isWhiteSpace _ = False
 -- | Returns a list without the last element.
 wLast :: [a] -> [a]
 wLast [] = []
-wLast [x] = []
+wLast [_] = []
 wLast (x:xs) = x : wLast xs
 
 -- | Returns the last char of a string.
@@ -68,3 +71,10 @@ mapFilterByIndex :: [(a, b)] -> (a -> Bool) -> (a, b)
 mapFilterByIndex (x:[]) _ = x
 mapFilterByIndex ((k,v):xs) func    | func k = (k,v)
                                     | otherwise = mapFilterByIndex xs func
+
+bytesToString :: [Word8] -> String
+bytesToString = map (toEnum . fromEnum)
+
+convertToWord :: String -> [Word8]
+convertToWord [] = []
+convertToWord (x:xs) = (fromIntegral (fromEnum x)) : convertToWord xs
