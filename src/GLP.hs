@@ -46,7 +46,8 @@ callableParserConfig :: (Formatter, [String], String, [String]) -> ParserConfig 
 callableParserConfig ((p,s),pref,sep,suf) cfg = Callable <$> name <*> params
     where
         name = parseGivenString p *> parseWhiteSpaces *> parseName
-        params = loopedParser pref *> parseSepBy (parseWhiteSpaces *> parseExpressionConfig cfg <|> parseVar) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces <* loopedParser suf
+        params = (loopedParser pref *> parseSepBy (parseWhiteSpaces *> parseExpressionConfig cfg <|> parseVar) (parseWhiteSpaces *> parseGivenString sep <* parseWhiteSpaces) <* parseWhiteSpaces <* loopedParser suf) 
+            <|> loopedParser pref *> parseWhiteSpaces $> [] <* loopedParser suf
 
 -- Parse a single operator with the given configuration and its formatters and separators. It returns a Parser Expr.
 operatorParserConfig :: (Formatter, [String], String) -> ParserConfig -> Parser Expr
@@ -102,10 +103,9 @@ parseCondition' (p,s) cfg = parseGivenString p *> (parseConditionExpression cfg)
 
 -- Parse a CodeBlock using the given configuration and its formatters and separators.
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
-parseCodeBlock ((p,s),l) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = List <$> ((parseGivenString p) *>
-    parseSepBy (parseWhiteSpaces *> (callableParserConfig call cfg <|>
-    parseExpressionConfig cfg <|> parseVar)) (parseWhiteSpacesUntil l *> loopedParser l <* parseWhiteSpaces)
-    <* parseGivenString s)
+parseCodeBlock ((p,s),l) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = List <$> ((parseGivenString p) *> parseWhiteSpaces *>
+    parseSepBy (parseExpressionConfig cfg) (parseWhiteSpacesUntil l *> loopedParser l <* parseWhiteSpacesWith l)
+    <* parseWhiteSpacesWith l <* parseGivenString s)
 
 -- Parse a CodeBlock configuration and returns it as a tuple with the formatters and the separators.
 parseCodeBlockConfig :: Parser (Formatter, [String])

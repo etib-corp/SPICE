@@ -145,6 +145,12 @@ parseWhiteSpacesUntil stopSeqs =
   where
     stopChars = map head $ filter (not . null) stopSeqs
 
+parseWhiteSpacesWith :: [String] -> Parser ()
+parseWhiteSpacesWith l =
+    void $ many $ satisfy (\c -> isSpace c || c `elem` stopChars)
+  where
+    stopChars = map head $ filter (not . null) l
+
 -- | Parses only integer value from a string.
 parseInt :: Parser Int
 parseInt = check >>= \ s ->
