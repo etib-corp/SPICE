@@ -69,6 +69,12 @@ getInstruction (Node (Operator ">") (e1:e2:[])) e =
     (Left err, _) -> Left err
     (_, Left err) -> Left err
 getInstruction (Node (List  []) l) e = foldM (\acc x -> getInstruction x e >>= \newI -> return (acc ++ newI)) [] l
+getInstruction (Node (Call "print") [Node (List argNodes) []]) e =
+  case length argNodes of
+    1 -> case createInstructionsFunction argNodes e of
+      Right i -> Right $ head i ++ [Print]
+      Left err -> Left err
+    _ -> Left "print only accepts one argument."
 getInstruction (Node (Call s) [Node (List argNodes) []]) e =
   case createInstructionsFunction argNodes e of
     Right i -> Right $ [CallFunc s i]
