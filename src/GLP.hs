@@ -94,10 +94,12 @@ parseVariabl ((p,s),declarator) cfg@(ParserConfig _ _ pops _ _ _ _ _ _) = parseG
 parseCondition' :: Formatter -> ParserConfig -> Parser Expr
 parseCondition' (p,s) cfg = parseGivenString p *> (parseExpressionConfig cfg) <* parseGivenString s
 
+
 -- Parse a CodeBlock using the given configuration and its formatters and separators.
 parseCodeBlock :: (Formatter, [String]) -> ParserConfig -> Parser Expr
 parseCodeBlock ((p,s),l) cfg@(ParserConfig pbool pvar pops _ ppar cb ifconf func call) = List <$> ((parseGivenString p) *>
-    parseSepBy (parseWhiteSpaces *> (callableParserConfig call cfg <|> parseExpressionConfig cfg <|> parseVar) <* parseWhiteSpaces) (parseWhiteSpaces *> loopedParser l <* parseWhiteSpaces)
+    parseSepBy (parseWhiteSpaces *> (callableParserConfig call cfg <|>
+    parseExpressionConfig cfg <|> parseVar)) (parseWhiteSpacesUntil l *> loopedParser l <* parseWhiteSpaces)
     <* parseGivenString s)
 
 -- Parse a CodeBlock configuration and returns it as a tuple with the formatters and the separators.
