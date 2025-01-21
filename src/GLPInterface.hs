@@ -24,6 +24,7 @@ getParserConfiguration :: String -> Maybe ParserConfig
 getParserConfiguration "" = Nothing
 getParserConfiguration str = parseSyntaxConfiguration $ lines str
 
+
 -- Used to manage error cases (If the configuration is not valid, it returns a NullConfig).
 testParserConfiguration :: String -> IO ParserConfig
 testParserConfiguration content = case getParserConfiguration content of
