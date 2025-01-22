@@ -65,5 +65,5 @@ SECTION:
 
 ```sh
 $ ./glados [-e|--execute] out.elf
-"Error ELF file type"
+"Does not support ELF files"
 ```
