@@ -25,7 +25,7 @@ The frontend must be defined using a configuration file that describes the gramm
 
 An example of lisp and js config file
 
-Config file for JS
+- **Config file for JS**
 
 ```sh
 boolean{prefix:"(", suffix:")"}: ["true", "false"]
@@ -39,7 +39,7 @@ function: ["function"] -> name -> parameters -> codeBlock
 callable: ["("] -> "," -> [")"]
 ```
 
-Config file for Lisp
+- **Config file for Lisp**
 
 ```sh
 boolean{prefix: "(", suffix: ")"}: ["#t", "#f"]
@@ -50,4 +50,20 @@ parameters{prefix: "(", suffix: ")"}: name -> " "
 codeBlock{prefix: "(", suffix: ")"}: [""]
 if{prefix: "(", suffix: ")"}: ["if"] -> [""]
 function{prefix: "(", suffix: ")"}: ["define"] -> name -> parameters -> codeBlock
+```
+
+## Structure of our bytecode file
+
+```yaml
+MAGIC-NUMBER:
+	- SPICEGLA
+SECTION:
+	- REST OF THE BYTECODE
+```
+
+- **Spice compiler est capable de détecter certains autre format de donné tel que fichier binaire ELF ou bytecode de la JVM ou de C#**
+
+```sh
+$ ./glados [-e|--execute] out.elf
+"Error ELF file type"
 ```

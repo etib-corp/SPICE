@@ -68,17 +68,3 @@ Compiler:
   - Virtual Machine/
   - Just In Time Compilation/
 ```
-
-## ABSTRACT SYNTAX TREE (AST)
-
-<!-- An example of this is the [Poetry](https://github.com/python-poetry/poetry/tree/master/docs) repo. That  project is also how I got into MkDocs in the first place. -->
-
-<!-- ## Embedding
-
-To embed a gist, just copy and paste the embed script URL which is provided on a gist.
-
-e.g.
-
-```html
-<script src="https://gist.github.com/MichaelCurrin/57caae30bd7b0991098e9804a9494c23.js"></script>
-``` -->

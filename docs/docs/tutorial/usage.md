@@ -27,7 +27,7 @@ or
 
 ```sh
 $ ./glados -h
-Usage: optparse-app [-v|--verbose] [-c|--config FILE] [FILES...] [-e|--execute] 
+Usage: optparse-app [-v|--verbose] [-c|--config FILE] [FILES...] [-e|--execute]
                     [-C|--compile] [-P|--preprocess]
 
 Available options:
@@ -39,18 +39,6 @@ Available options:
   -h,--help                Show this help text
 ```
 
-<!-- ```
-default: install
-all: install build
-h help:
-install:
-upgrade:
-s serve:
-b build:
-d deploy:
-``` -->
-
-
 ## DOCS
 
 Please check the main repository
@@ -58,10 +46,6 @@ Please check the main repository
 ```
 https://github.com/etib-corp/SPICE?tab=readme-ov-file#readme
 ```
-
-<!-- Then open in your browser:
-
-- [localhost:8000](http://localhost:8000) -->
 
 
 ## Build SPICE
@@ -87,6 +71,7 @@ $ ./glados < foo.scm
 or
 
 ```sh
+$ ./glados
 > foo
 *** ERROR : variable foo is not bound.
 > (define foo 42)
@@ -97,13 +82,10 @@ or
 ## Usage of Spice Compiler
 
 ```sh
-$ ./glados -c config.js -C your_source_code.ext
+$ ./glados [-c|--config] config.js [-C|--compile] your_source_code.ext
 ```
-or
 
-```sh
-$ ./glados --config config.js --compile your_source_code.ext
-```
+The resulting file is out.bin by default. It contains the bytecode of the compiled source code
 
 ```sh
 $ ls
@@ -113,7 +95,7 @@ out.bin
 You can use [-P|--preprocess] to switch in preprocessing mode
 
 ```sh
-$ ./glados --config config.js --compile your_source_code.ext -P
+$ ./glados [-c|--config] config.js [-C|--compile] your_source_code.ext [-P|--preprocess]
 []
 []
 [CallFunc "facto" [[PushInt 5]],Print]
@@ -123,18 +105,11 @@ $ ./glados --config config.js --compile your_source_code.ext -P
 ## Usage of Spice VM (Virtual Machine)
 
 ```sh
-$ ./glados -e out.bin
-...
-```
-or
-
-```sh
-$ ./glados --execute out.bin
+$ ./glados [-e|--execute] out.bin
 ...
 ```
 
-
-## SPICE Features
+## SPICE Interpreter Features
 
 
 Function declaration :
