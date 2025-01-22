@@ -21,63 +21,33 @@ Frontend:
   - Output: AST
 ```
 
-## ABSTRACT SYNTAX TREE (AST)
+The frontend must be defined using a configuration file that describes the grammar of the target source language.
 
-```yaml
-The AST is a crucial intermediary representation that abstracts away unnecessary syntax details, leaving only the essential structure needed for further compilation.
-	- Nodes represent code constructs (e.g., loops, conditions, assignments).
-	- Used for optimizing and translating code in later stages.
+An example of lisp and js config file
+
+Config file for JS
+
+```sh
+boolean{prefix:"(", suffix:")"}: ["true", "false"]
+variable{prefix:"", suffix: ""}: ["let", "const", "var"]
+operators: [plus: expression -> "+" -> expression , minus: expression -> "-" -> expression , multiply: expression -> "*" -> expression , divide: expression -> "/" -> expression , modulo: expression -> "%" -> expression , equal: expression -> "===" -> expression , assignation: expression -> "=" -> expression, less: expression -> "<" -> expression, greater: expression -> ">" -> expression]
+condition{prefix: "(", suffix: ")"}: expression
+parameters{prefix: "(", suffix: ")"}: name -> ","
+codeBlock{prefix: "{", suffix: "}"}: ["\n",";"]
+if: ["if"] -> ["else"]
+function: ["function"] -> name -> parameters -> codeBlock
+callable: ["("] -> "," -> [")"]
 ```
 
-## MIDDLEND COMPILER
+Config file for Lisp
 
-<!-- See [Configuration](https://www.mkdocs.org/user-guide/configuration/) page on MkDocs site for options. -->
-
-Integration in progress, but the main idea is :
-
-```yaml
-The middlend performs optimizations on the AST or Intermediate Representation (IR), ensuring efficient execution.
-	- Intermediate Representation: Converts the AST into a lower-level format suitable for optimization.
-	- Optimization Techniques:
-	- Dead code elimination.
-	- Loop unrolling.
-	- Constant folding.
+```sh
+boolean{prefix: "(", suffix: ")"}: ["#t", "#f"]
+variable{prefix: "(", suffix: ")"}: ["define"]
+operators{prefix: "(", suffix: ")"}: [plus: "+" -> expression -> expression, minus: "-" -> expression -> expression, multiply: "*" -> expression -> expression, divide: "/" -> expression -> expression, modulo: "%" -> expression -> expression, equal: "eq?" -> expression -> expression, assignation: name -> "=" -> expression]
+condition{prefix: "(", suffix: ")"}: expression
+parameters{prefix: "(", suffix: ")"}: name -> " "
+codeBlock{prefix: "(", suffix: ")"}: [""]
+if{prefix: "(", suffix: ")"}: ["if"] -> [""]
+function{prefix: "(", suffix: ")"}: ["define"] -> name -> parameters -> codeBlock
 ```
-
-For example, it ensures efficient memory usage and faster runtime execution.
-
-## BACKEND COMPILER
-
-```yml
-The backend takes the optimized IR and generates target-specific machine code.
-	- Code Generation:
-	- Translates IR into assembly or machine code.
-	- Allocates registers and manages memory.
-	- Target-specific Optimizations:
-	- Applies optimizations based on the architecture (e.g., x86, ARM).
-	- Output: Produces an executable file or binary.
-```
-
-Example project structure for backend integration:
-
-```yaml
-Compiler:
-  - Interpreter/
-      - Parsing/
-      - Semantic Checking/
-  - Virtual Machine/
-  - Just In Time Compilation/
-```
-
-
-<!-- An example of this is the [Poetry](https://github.com/python-poetry/poetry/tree/master/docs) repo. That  project is also how I got into MkDocs in the first place. -->
-
-<!-- ## Embedding
-
-To embed a gist, just copy and paste the embed script URL which is provided on a gist.
-
-e.g.
-
-```html
-<script src="https://gist.github.com/MichaelCurrin/57caae30bd7b0991098e9804a9494c23.js"></script>
-``` -->

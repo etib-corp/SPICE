@@ -94,37 +94,6 @@ or
 42
 ```
 
-
-## SPICE Features
-
-
-Function declaration :
-
-```
-(define add
-(lambda (a b)
-(+ a b)))
-(add 3 4)
-```
-
-
-Builtin's function :
-
-```
-(+ (* 2 3) (div 10 2))
-(* (* 2 3) (div 10 2))
-(- (* 2 3) (div 10 2))
-(eq (* 2 3) (div 10 2))
-(< (* 2 3) (div 10 2))
-(div (* 2 3) (div 10 2))
-```
-
-Conditional jump:
-
-```
-(if #t 1 2)
-```
-
 ## Usage of Spice Compiler
 
 ```sh
@@ -163,6 +132,38 @@ or
 $ ./glados --execute out.bin
 ...
 ```
+
+
+## SPICE Features
+
+
+Function declaration :
+
+```
+(define add
+(lambda (a b)
+(+ a b)))
+(add 3 4)
+```
+
+
+Builtin's function :
+
+```
+(+ (* 2 3) (div 10 2))
+(* (* 2 3) (div 10 2))
+(- (* 2 3) (div 10 2))
+(eq (* 2 3) (div 10 2))
+(< (* 2 3) (div 10 2))
+(div (* 2 3) (div 10 2))
+```
+
+Conditional jump:
+
+```
+(if #t 1 2)
+```
+
 
 ## Clean SPICE repository
 

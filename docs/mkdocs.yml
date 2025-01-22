@@ -18,7 +18,8 @@ nav:
   - Tutorial:
       # - TL;DR: tutorial/tldr.md
       - Installation: tutorial/installation.md
+      - Theoretical functioning: tutorial/theorical.md
       # - Set up project: tutorial/setup-project.md
-      - Advanced: tutorial/advanced.md
       - Usage: tutorial/usage.md
+      - Advanced: tutorial/advanced.md
       # - Deploy: tutorial/deploy.md
