@@ -8,11 +8,11 @@ import Lib
 
 import Control.Applicative
 import Control.Monad
+
 import Data.Functor.Identity
 import Data.List
 import Data.Char
-import Debug.Trace
-import Structures
+import Text.ParserCombinators.ReadP (string, look)
 
 -- | Represents an error in the parsing process, including a message and
 -- the position in the input where the error occurred.
@@ -116,9 +116,15 @@ parseNoneOf s = satisfy (\ c -> not $ elem c s)
 parseString :: Parser String
 parseString = parseSomeUntil parseAnyChar (satisfy isWhiteSpace)
 
+parseString' :: Parser String
+parseString' = some (satisfy isAlpha)
+
 -- | Parses while it can parse with a separator parser given as parameter.
 parseSepBy :: Parser a -> Parser b -> Parser [a]
 parseSepBy p1 p2 = (:) <$> p1 <*> (many (p2 *> p1))
+
+parseSepBy' :: Parser a -> Parser b -> Parser [a]
+parseSepBy' p1 p2 = (:) <$> p1 <*> (some (p2 *> p1))
 
 -- | Parses with a first parser while it parses using the second parser given as argument.
 parseManyUntil :: Parser a -> Parser b -> Parser [a]
@@ -128,9 +134,22 @@ parseManyUntil pa pb = (pb *> pure []) <|> fmap (:) pa <*> parseManyUntil pa pb
 parseSomeUntil :: Parser a -> Parser b -> Parser [a]
 parseSomeUntil pa pb = fmap (:) pa <*> parseManyUntil pa pb
 
+
 -- | Parses while it corresponds to a whitespace from a string.
 parseWhiteSpaces :: Parser ()
 parseWhiteSpaces = void $ many $ satisfy (isSpace)
+
+parseWhiteSpacesUntil :: [String] -> Parser ()
+parseWhiteSpacesUntil stopSeqs =
+    void $ many $ satisfy (\c -> isSpace c && not (c `elem` stopChars))
+  where
+    stopChars = map head $ filter (not . null) stopSeqs
+
+parseWhiteSpacesWith :: [String] -> Parser ()
+parseWhiteSpacesWith l =
+    void $ many $ satisfy (\c -> isSpace c || c `elem` stopChars)
+  where
+    stopChars = map head $ filter (not . null) l
 
 -- | Parses only integer value from a string.
 parseInt :: Parser Int
@@ -162,5 +181,6 @@ parseDouble = check >>= \ s ->
     where
         check = (fmap (++) (fmap (++) (fmap (:) (parseChar '-') <*> some (satisfy isDigit)) <*> parseGivenString ".") <*> some (satisfy isDigit)) <|> fail "Invalid float."
 
-test :: Either Error Expr -> Expr
-test (Right expr) = expr
+-- | Parses a string in quotes. ("toto" -> toto)
+parseStringInQuotes :: Parser String
+parseStringInQuotes = parseChar '"' *> parseManyUntil parseAnyChar (satisfy (== '"'))

@@ -11,12 +11,32 @@ $ cd SPICE
 ## CLI help
 
 ```sh
-$ ./glados --help   // Integration in progress
+$ ./glados --help
+Usage: optparse-app [-v|--verbose] [-c|--config FILE] [FILES...] [-e|--execute]
+                    [-C|--compile] [-P|--preprocess]
+
+Available options:
+  -v,--verbose             Verbose output
+  -c,--config FILE         Configuration file
+  -e,--execute             Execute the program
+  -C,--compile             Compile the program
+  -P,--preprocess          Preprocess the program
+  -h,--help                Show this help text
 ```
 or
 
 ```sh
-$ ./glados -h   // Integration in progress
+$ ./glados -h
+Usage: optparse-app [-v|--verbose] [-c|--config FILE] [FILES...] [-e|--execute] 
+                    [-C|--compile] [-P|--preprocess]
+
+Available options:
+  -v,--verbose             Verbose output
+  -c,--config FILE         Configuration file
+  -e,--execute             Execute the program
+  -C,--compile             Compile the program
+  -P,--preprocess          Preprocess the program
+  -h,--help                Show this help text
 ```
 
 <!-- ```
@@ -56,7 +76,7 @@ or
 $ make build
 ```
 
-## Usage
+## Usage of Basic Interpreter
 
 
 Use this project in two ways: read from a file or interact directly via prompt input
@@ -103,6 +123,35 @@ Conditional jump:
 
 ```
 (if #t 1 2)
+```
+
+## Usage of Spice Compiler
+
+```sh
+$ ./glados -C your_source_code.ext
+```
+or
+
+```sh
+$ ./glados --compile your_source_code.ext
+```
+
+```sh
+$ ls
+out.bin
+```
+
+## Usage of Spice VM (Virtual Machine)
+
+```sh
+$ ./glados -e out.bin
+...
+```
+or
+
+```sh
+$ ./glados --execute out.bin
+...
 ```
 
 ## Clean SPICE repository
