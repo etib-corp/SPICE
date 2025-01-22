@@ -128,17 +128,27 @@ Conditional jump:
 ## Usage of Spice Compiler
 
 ```sh
-$ ./glados -C your_source_code.ext
+$ ./glados -c config.js -C your_source_code.ext
 ```
 or
 
 ```sh
-$ ./glados --compile your_source_code.ext
+$ ./glados --config config.js --compile your_source_code.ext
 ```
 
 ```sh
 $ ls
 out.bin
+```
+
+You can use [-P|--preprocess] to switch in preprocessing mode
+
+```sh
+$ ./glados --config config.js --compile your_source_code.ext -P
+[]
+[]
+[CallFunc "facto" [[PushInt 5]],Print]
+[22,102,97,99,116,111,0,4,0,1,5,0,255,21]
 ```
 
 ## Usage of Spice VM (Virtual Machine)
